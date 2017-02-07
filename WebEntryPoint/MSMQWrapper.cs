@@ -45,13 +45,29 @@ namespace WebEntryPoint.MQ
             else throw new MsMQQueueUsageException(string.Format("{0}: Setting PeekComplete for non-transactional queues breaks the thing ", Name));
         }
 
+        public void AddHandler(QueueManager2.EventHandlerWithQueue handler, MSMQWrapper queue)
+        {
+            if (!Q.Transactional)
+            {
+                Q.ReceiveCompleted += (sender, e) => handler(sender, e, queue);
+            }
+            else throw new MsMQQueueUsageException(string.Format("{0}: Setting Receivecomplete handler for non-transactional queues breaks the thing ", Name));
+        }
+
         public void AddHandler(ReceiveCompletedEventHandler handler)
         {
             if (!Q.Transactional)
             {
+                // (sender, e) => handler(sender, e, queue)
                 Q.ReceiveCompleted += handler;
             }
             else throw new MsMQQueueUsageException(string.Format("{0}: Setting Receivecomplete handler for non-transactional queues breaks the thing ", Name));
+        }
+
+        public void RemoveHandler(QueueManager2.EventHandlerWithQueue handler)
+        {
+            MSMQWrapper q = new MSMQWrapper("dummy");
+            Q.ReceiveCompleted -= (sender, e) => handler(sender, e, q);
         }
 
         public void RemoveHandler(ReceiveCompletedEventHandler handler)

@@ -10,57 +10,77 @@ namespace WebEntryPoint.WebSockets
 {
     class SocketClient
     {
-        private ClientWebSocket wsClient;
+        private ClientWebSocket _wsClient;
         private ILogger _logger = LogManager.CreateLogger(typeof(SocketClient));
+        object _serializer = new object();
         public SocketClient()
         {
-            
+
         }
+
         public void Connect(string url)
         {
-            _logger.Debug("Connecting to {0}", url);
-            wsClient = new ClientWebSocket();
-            
-            if (Helpers.Appsettings.Ssl())
+            lock (_serializer)
             {
-                _logger.Debug("Loading certificate from store");
-                wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore("local.entrypoint"));
-                wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore("local.frontend"));
+                if (!Connected())
+                {
+                    _logger.Debug("Connecting to {0}", url);
+                    _wsClient = new ClientWebSocket();
+
+                    if (Helpers.Appsettings.Ssl())
+                    {
+                        _logger.Debug("Loading certificate from store");
+                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore("local.entrypoint"));
+                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore("local.frontend"));
+                    }
+                    var tokSrc = new CancellationTokenSource();
+                    //cannot use await within lock
+                    var task = _wsClient.ConnectAsync(new Uri(url), tokSrc.Token);
+                    task.Wait(); task.Dispose();
+
+                    _logger.Debug("Opened ClientWebSocket to {0}", url);
+                    _logger.Debug("SubProtocol: {0}", _wsClient.SubProtocol ?? "-none-");
+                    tokSrc.Dispose();
+                }
             }
-            var tokSrc = new CancellationTokenSource();
-            //change to await
-            var task = wsClient.ConnectAsync(new Uri(url), tokSrc.Token);
-            task.Wait(); task.Dispose();
-
-            _logger.Debug("Opened WebSocket to {0}", url);
-            _logger.Debug("SubProtocol: {0}", wsClient.SubProtocol ?? "-none-");
-            tokSrc.Dispose();
         }
 
-
-        public async Task Send(string sessionToken, string msg, params object[] msgPars)
+        public void Send(string sessionToken, string msg, params object[] msgPars)
         {
-            var tokSrc = new CancellationTokenSource();
-
-            string total_msg = string.Format("{0}#-_-_-#-Remote QueueManger: {1}", sessionToken, string.Format(msg, msgPars));
-            await wsClient.SendAsync(
-                           new ArraySegment<byte>(Encoding.UTF8.GetBytes(total_msg)),
-                                               WebSocketMessageType.Text,
-                                               true,
-                                               tokSrc.Token
-                                               );
-            tokSrc.Dispose();
-        }
-
-        public async void Close()
-        {
-            if (wsClient.State == WebSocketState.Open)
+            lock (_serializer)
             {
                 var tokSrc = new CancellationTokenSource();
-                await wsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "", tokSrc.Token);
+
+                string total_msg = string.Format("{0}#-_-_-#-Remote QueueManger: {1}", sessionToken, string.Format(msg, msgPars));
+                var tsk=_wsClient.SendAsync(
+                               new ArraySegment<byte>(Encoding.UTF8.GetBytes(total_msg)),
+                                                   WebSocketMessageType.Text,
+                                                   true,
+                                                   tokSrc.Token
+                                                   );
+                tsk.Wait();tsk.Dispose();
                 tokSrc.Dispose();
             }
-            _logger.Debug("WebSocket CLOSED");
+        }
+
+        public void Close()
+        {
+            lock (_serializer)
+            {
+                if (_wsClient.State == WebSocketState.Open)
+                {
+                    var tokSrc = new CancellationTokenSource();
+                    var tsk = _wsClient.CloseAsync(WebSocketCloseStatus.NormalClosure, "", tokSrc.Token);
+                    tsk.Wait(); tsk.Dispose();
+                    tokSrc.Dispose();
+                }
+                _logger.Debug("ClientWebSocket CLOSED");
+            }
+        }
+
+        public bool Connected()
+        {
+            return _wsClient != null && _wsClient.State == WebSocketState.Open;
         }
     }
 }

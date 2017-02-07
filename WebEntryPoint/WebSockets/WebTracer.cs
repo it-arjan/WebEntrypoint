@@ -12,25 +12,32 @@ namespace WebEntryPoint.WebSockets
         private SocketClient _socket = new SocketClient();
         private string _url;
         static ILogger _logger = LogManager.CreateLogger(typeof(WebTracer));
+
         public WebTracer(string serverUrl)
         {
             _socket = new SocketClient();
             _url = serverUrl;
-            _logger.Info("Will ask socketclient to connect to {0}", _url);
+            _logger.Info("Asking socketclient to connect to {0}", _url);
+            _socket.Connect(_url);
         }
 
         public void Send(string sessionToken, string msg, params object[] msgPars)
         {
             try
             {
-                _socket.Connect(_url);
-                var tsk = _socket.Send(sessionToken, msg, msgPars);
-                tsk.Wait(); tsk.Dispose();
-                _socket.Close();
+                if (!_socket.Connected())
+                {
+                    _logger.Warn("SocketClient seems disconnected, reconnecting....");
+                    _socket.Connect(_url);
+                }
+
+                _socket.Send(sessionToken, msg, msgPars);
+                //tsk.Wait(); tsk.Dispose();
+                //_socket.Close();
             }
             catch (Exception ex)
             {
-                _logger.Error("Error sending data to socket on server {0}. Msg: {1}", _url, ex.Message);
+                _logger.Error("Error sending msg '{2}' to socket on server {0}. Msg: {1}", _url, ex.Message, msg);
             }
         }
     }

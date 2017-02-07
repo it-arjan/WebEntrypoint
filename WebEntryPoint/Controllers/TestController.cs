@@ -9,7 +9,6 @@ using System.Web.Http.Cors;
 
 namespace WebEntryPoint
 {
-    [Authorize]
     public class TestController: ApiController
     {
         [EnableCors(origins: "http://local.frontend,https://local.frontend,http://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com,https://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com", headers: "*", methods: "*")]

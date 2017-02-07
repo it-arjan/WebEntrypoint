@@ -20,7 +20,7 @@ namespace WebEntryPoint
             ServiceBase[] ServicesToRun;
             ServicesToRun = new ServiceBase[]
             {
-                new Service1()
+                new EntrypointService()
             };
             ServiceBase.Run(ServicesToRun);
         }

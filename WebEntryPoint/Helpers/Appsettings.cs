@@ -56,5 +56,15 @@ namespace WebEntryPoint.Helpers
         {
             return string.Format("facing.{0}.authserver", ConfigurationManager.AppSettings.Get("facing").ToLower());
         }
+
+        public static string SiliconClientId()
+        {
+            return ConfigurationManager.AppSettings.Get("SiliconClientId");
+        }
+
+        public static string SiliconClientSecret()
+        {
+            return ConfigurationManager.AppSettings.Get("SiliconClientSecret");
+        }
     }
 }

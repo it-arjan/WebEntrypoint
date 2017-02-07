@@ -14,13 +14,13 @@ namespace WebEntryPoint
 
         public void Configuration(IAppBuilder appBuilder)
         {
-            _logger.Info("Configuring to accept access tokens from identityserver and require a scope of 'QueueApi'..");
+            _logger.Info("Configuring to accept access tokens from identityserver and require a scope of 'EntryQueueApi'..");
 
             appBuilder.UseIdentityServerBearerTokenAuthentication(new IdentityServerBearerTokenAuthenticationOptions
             {
                 Authority = Helpers.Appsettings.AuthUrl(),
                 ValidationMode = ValidationMode.Local, //local for jwt tokene, server-endpoint for referece tokenes
-                RequiredScopes = new[] { "QueueApi" }
+                RequiredScopes = new[] { "EntryQueueApi" }
             });
 
             // Configure Web API for self-host. 

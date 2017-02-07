@@ -28,7 +28,7 @@ namespace WebEntryPoint.WebSockets
             _socketServer = new WebSocketServer(url);
             if (url.Contains("wss"))
             {
-                _logger.Info("..loading certificate from the store");
+                _logger.Info("Server loading certificate from the store");
                 _socketServer.Certificate = Helpers.Security.GetCertificateFromStore("local.entrypoint");
                 _logger.Info("..certificate loaded");
             }
@@ -44,14 +44,13 @@ namespace WebEntryPoint.WebSockets
                     }
                     else
                     {
-                        _logger.Info("Client '{0}' *not* added to sendlist, check if appsetting '{1}' should contain that url", 
-                         socket.ConnectionInfo.Origin, Helpers.Appsettings.SocketServerUrlKey());
+                        _logger.Info("Client '{0}' *not* added to sendlist", socket.ConnectionInfo.Origin);
                     }
                 };
 
                 socket.OnClose = () =>
                 {
-                    _logger.Info("Socket CLOSED by Client originating from: " + socket.ConnectionInfo.Origin);
+                    _logger.Info("Socket CLOSED by Client originating from: '{0}'", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
                         _socketServerSendList.Remove(socket);
@@ -60,7 +59,7 @@ namespace WebEntryPoint.WebSockets
 
                 socket.OnMessage = message =>
                 {
-                    _logger.Info("Sending message to serverSendList: " + message);
+                    _logger.Info("Sending serverSendList: '{0}'", message);
                     if (!_socketServerSendList.Any())
                     {
                         _logger.Warn("Sendlist is empty, no messages will be sent, check app.config for {0}", Helpers.Appsettings.SocketServerUrlKey());
