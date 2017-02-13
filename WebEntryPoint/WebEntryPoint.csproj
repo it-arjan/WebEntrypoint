@@ -85,14 +85,12 @@
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\.nuget\Packages\NLog.4.3.11\lib\net45\NLog.dll</HintPath>
+    <Reference Include="NLog">
+      <HintPath>..\Packages\NLog.4.3.11\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NLogWrapper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\.nuget\Packages\NLog.Wrapper.ZeroConfig.1.0.0\lib\NLogWrapper.dll</HintPath>
+    <Reference Include="NLogWrapper">
+      <HintPath>..\Packages\NLog.Wrapper.ZeroConfig.1.0.0\lib\NLogWrapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
