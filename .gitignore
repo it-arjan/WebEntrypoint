@@ -15,8 +15,9 @@ packages/
 *.dll
 *.cache
 *.user
+*.log
 
-# Files
+# Config Files
 Web.config
 App.config
 ============================
