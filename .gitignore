@@ -17,9 +17,6 @@ packages/
 *.user
 *.log
 
-# Config Files
-Web.config
-App.config
 ============================
 
 # Windows image file caches
