@@ -90,7 +90,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="NLogWrapper">
-      <HintPath>..\Packages\NLog.Wrapper.ZeroConfig.1.0.0\lib\NLogWrapper.dll</HintPath>
+      <HintPath>..\Packages\NLog.Wrapper.ZeroConfig.1.0.0\lib\net40\NLogWrapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
