@@ -24,12 +24,12 @@ namespace WebEntryPoint.WebSockets
 
         public void Start(string url)
         {
-            _logger.Debug("Connecting to {0}", url);
+            _logger.Debug("Starting on ip:port {0}", url);
             _socketServer = new WebSocketServer(url);
             if (url.Contains("wss"))
             {
                 _logger.Info("Server loading certificate from the store");
-                _socketServer.Certificate = Helpers.Security.GetCertificateFromStore("local.entrypoint");
+                _socketServer.Certificate = Helpers.Security.GetCertificateFromStore(Helpers.Appsettings.Hostname());
                 _logger.Info("..certificate loaded");
             }
             _socketServer.Start(socket =>

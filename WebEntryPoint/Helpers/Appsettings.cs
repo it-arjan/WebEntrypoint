@@ -9,52 +9,84 @@ namespace WebEntryPoint.Helpers
 {
     static class Appsettings
     {
-        public static string GetCertificatePfxPath(string name)
-        {
-            return ConfigurationManager.AppSettings.Get("Websocket.certificatePfxPath");
-        }
-
         public static bool Ssl()
         {
-            var key = HostKey();
-            return ConfigurationManager.AppSettings.Get("facing").Contains("https");
+            return Scheme() == "https";
         }
 
-        public static string HostUrl() 
+        public static string HostUrl()
         {
-            var key = HostKey();
-            return ConfigurationManager.AppSettings.Get(key);
+            return string.Format("{0}://{1}:{2}/", Scheme(), Hostname(), Port());
         }
 
-        public static string HostKey()
+        public static string Scheme()
         {
-            return string.Format("facing.{0}.hosturl", ConfigurationManager.AppSettings.Get("facing").ToLower());
+            return ConfigurationManager.AppSettings.Get(SchemeKey());
         }
-
-        public static string SocketServerUrl()
+        public static string Port()
         {
-            var key = SocketServerUrlKey();
-            return ConfigurationManager.AppSettings.Get(key);
+            return ConfigurationManager.AppSettings.Get(PortKey());
         }
-
+        public static string Hostname()
+        {
+            return ConfigurationManager.AppSettings.Get(HostnameKey());
+        }
+        
         public static string SocketServerUrlKey()
         {
-            return string.Format("facing.{0}.socketserver.url", ConfigurationManager.AppSettings.Get("facing").ToLower());
+            return "scheme";
         }
-        public static string SocketServerListenUrls()
+        public static string SchemeKey()
         {
-            var key = SocketServerUrlKey();
-            return ConfigurationManager.AppSettings.Get("Websocket.ListenUrls");
+            return "scheme";
         }
+        public static string HostnameKey()
+        {
+            return "hostname";
+        }
+        public static string PortKey()
+        {
+            return "port";
+        }
+        public static string SocketPortKey()
+        {
+            return "websocket.port";
+        }
+        public static string AuthUrlKey()
+        {
+            return "authserver";
+        }
+        public static string SocketSchemeKey()
+        {
+            return "websocket.scheme";
+        }
+ 
+        public static string SocketServerUrl()
+        {
+            return string.Format("{0}://{1}:{2}/", SocketScheme(), Hostname(), SocketPort());
+        }
+
+        private static string SocketPort()
+        {
+            var key = SocketPortKey();
+            return ConfigurationManager.AppSettings.Get(key);
+        }
+
+        public static string SocketScheme()
+        {
+            var key = SocketSchemeKey();
+            return ConfigurationManager.AppSettings.Get(key);
+        }
+    
         public static string AuthUrl()
         {
             var key = AuthUrlKey();
             return ConfigurationManager.AppSettings.Get(key);
         }
 
-        public static string AuthUrlKey()
+        public static string SocketServerListenUrls()
         {
-            return string.Format("facing.{0}.authserver", ConfigurationManager.AppSettings.Get("facing").ToLower());
+            return ConfigurationManager.AppSettings.Get("websocket.listeners.csv");
         }
 
         public static string SiliconClientId()

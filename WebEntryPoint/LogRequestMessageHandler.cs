@@ -30,7 +30,8 @@ namespace WebEntryPoint
             }
             catch (Exception ex)
             {
-                _logger.Error("Error getting the principal");
+                _logger.Error("exception getting the principal");
+                throw ex;
             }
             return base.SendAsync(request, cancellationToken);
         }

@@ -30,8 +30,7 @@ namespace WebEntryPoint.WebSockets
                     if (Helpers.Appsettings.Ssl())
                     {
                         _logger.Debug("Loading certificate from store");
-                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore("local.entrypoint"));
-                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore("local.frontend"));
+                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.Appsettings.Hostname()));
                     }
                     var tokSrc = new CancellationTokenSource();
                     //cannot use await within lock

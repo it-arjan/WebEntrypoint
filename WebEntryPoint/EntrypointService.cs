@@ -42,6 +42,7 @@ namespace WebEntryPoint
 
         private void CheckHealth()
         {
+            _logger.Debug("Checking config settings..");
             _entryQueue = ConfigurationManager.AppSettings.Get("entryQueue");
             _service1Queue = ConfigurationManager.AppSettings.Get("service1Queue");
             _service2Queue = ConfigurationManager.AppSettings.Get("service2Queue");
@@ -57,13 +58,19 @@ namespace WebEntryPoint
             if (Helpers.Appsettings.SiliconClientId() == null) throw new Exception("setting 'SiliconClientId' is not present in app.config");
             if (Helpers.Appsettings.SiliconClientSecret() == null) throw new Exception("setting 'SiliconClientSecret' is not present in app.config");
 
-            if (ConfigurationManager.AppSettings.Get("facing") == null) throw new Exception("setting 'facing' is not present in app.config");
-
-            if (Helpers.Appsettings.HostUrl() == null) throw new Exception(Helpers.Appsettings.HostKey() + " is not present in app.config");
+            if (Helpers.Appsettings.Hostname() == null) throw new Exception(Helpers.Appsettings.HostnameKey() + " is not present in app.config");
+            if (Helpers.Appsettings.Port() == null) throw new Exception(Helpers.Appsettings.PortKey() + " is not present in app.config");
+            if (Helpers.Appsettings.Scheme() == null) throw new Exception(Helpers.Appsettings.SchemeKey() + " is not present in app.config");
             if (Helpers.Appsettings.AuthUrl() == null) throw new Exception(Helpers.Appsettings.AuthUrlKey() + " is not present in app.config");
             if (Helpers.Appsettings.SocketServerUrl() == null) throw new Exception(Helpers.Appsettings.SocketServerUrlKey() + " is not present in app.config");
 
-            if (ConfigurationManager.AppSettings["Websocket.ListenUrls"] == null) throw new Exception("Websocket.ListenUrls not defined in app.config");
+            if (Helpers.Appsettings.SocketServerListenUrls() == null) throw new Exception("Websocket.Listeners not defined in app.config");
+
+            _logger.Debug("config setting seem ok..");
+            _logger.Debug("Url = {0}", Helpers.Appsettings.HostUrl());
+            _logger.Debug("{0} = {1}", Helpers.Appsettings.AuthUrlKey(), Helpers.Appsettings.AuthUrl());
+            _logger.Debug("{0} = {1}", Helpers.Appsettings.SocketServerUrlKey(), Helpers.Appsettings.SocketServerUrl());
+            _logger.Debug("..done with config checks");
         }
 
         protected override void OnStart(string[] args)
@@ -77,7 +84,7 @@ namespace WebEntryPoint
             _logger.Info("Starting socket server.");
             _socketServer = new WebSockets.SocketServer();
             //_socketServer.WireFleckLogging();
-            _socketServer.Start(Helpers.Appsettings.SocketServerUrl().Replace("local.entrypoint", "0.0.0.0"));
+            _socketServer.Start(Helpers.Appsettings.SocketServerUrl().Replace(Helpers.Appsettings.Hostname(), "0.0.0.0"));
 
             _logger.Info("Starting queuemanager in seprate thread.");
              queueManager = new QueueManager2(_entryQueue, _service1Queue, _service2Queue, _service3Queue, _exitQueue);
