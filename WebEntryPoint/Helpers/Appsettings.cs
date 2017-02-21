@@ -9,13 +9,14 @@ namespace WebEntryPoint.Helpers
 {
     static class Appsettings
     {
-        public const string SocketListenersKey = "websocket.listeners.csv";
         public const string SiliconClientIdKey = "SiliconClientId";
         public const string SiliconClientSecretKey = "SiliconClientSecret";
         public const string SchemeKey = "scheme";
         public const string HostnameKey = "hostname";
         public const string PortKey = "port";
         public const string AuthServerKey = "authserver";
+
+        public const string SocketListenersKey = "websocket.listeners.csv";
         public const string SocketPortKey = "websocket.port";
         public const string SocketSchemeKey = "websocket.scheme";
 

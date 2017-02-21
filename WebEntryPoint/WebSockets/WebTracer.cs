@@ -17,7 +17,7 @@ namespace WebEntryPoint.WebSockets
         {
             _socket = new SocketClient();
             _url = serverUrl;
-            _logger.Info("Asking socketclient to connect to {0}", _url);
+            _logger.Info("Connecting to socket server '{0}'", _url);
             _socket.Connect(_url);
         }
 

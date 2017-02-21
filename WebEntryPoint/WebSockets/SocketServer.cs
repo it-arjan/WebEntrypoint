@@ -16,6 +16,7 @@ namespace WebEntryPoint.WebSockets
         private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog));
         private WebSocketServer _socketServer;
         private List<IWebSocketConnection> _socketServerSendList;
+        private string[] _listenList;
 
         public SocketServer()
         {
@@ -26,6 +27,13 @@ namespace WebEntryPoint.WebSockets
         {
             _logger.Debug("Starting on ip:port {0}", url);
             _socketServer = new WebSocketServer(url);
+            _listenList = Helpers.Appsettings.SocketServerListenUrls().Split(',');
+            _logger.Debug("Listening hostnames found in '{0}'", Helpers.Appsettings.SocketListenersKey);
+            foreach (var hostname in _listenList)
+            {
+                _logger.Debug("-{0}", hostname);
+            }
+            
             if (url.Contains("wss"))
             {
                 _logger.Info("Server loading certificate from the store");
@@ -99,12 +107,11 @@ namespace WebEntryPoint.WebSockets
                 }
             };
         }
-        private static bool IsListeningSocket(IWebSocketConnection socket)
+        private bool IsListeningSocket(IWebSocketConnection socket)
         {
-            var listenList = Helpers.Appsettings.SocketServerListenUrls().Split(',');
-            foreach (var url in listenList)
+            foreach (var hostname in _listenList)
             {
-                if (socket.ConnectionInfo.Origin.Contains(url.Trim()))
+                if (socket.ConnectionInfo.Origin != null && socket.ConnectionInfo.Origin.ToLower().Contains(hostname.ToLower().Trim()))
                     return true;
             }
             return false;
