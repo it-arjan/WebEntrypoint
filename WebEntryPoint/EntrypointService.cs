@@ -58,18 +58,17 @@ namespace WebEntryPoint
             if (Helpers.Appsettings.SiliconClientId() == null) throw new Exception("setting 'SiliconClientId' is not present in app.config");
             if (Helpers.Appsettings.SiliconClientSecret() == null) throw new Exception("setting 'SiliconClientSecret' is not present in app.config");
 
-            if (Helpers.Appsettings.Hostname() == null) throw new Exception(Helpers.Appsettings.HostnameKey() + " is not present in app.config");
-            if (Helpers.Appsettings.Port() == null) throw new Exception(Helpers.Appsettings.PortKey() + " is not present in app.config");
-            if (Helpers.Appsettings.Scheme() == null) throw new Exception(Helpers.Appsettings.SchemeKey() + " is not present in app.config");
-            if (Helpers.Appsettings.AuthUrl() == null) throw new Exception(Helpers.Appsettings.AuthUrlKey() + " is not present in app.config");
-            if (Helpers.Appsettings.SocketServerUrl() == null) throw new Exception(Helpers.Appsettings.SocketServerUrlKey() + " is not present in app.config");
+            if (Helpers.Appsettings.Hostname() == null) throw new Exception(Helpers.Appsettings.HostnameKey + " is not present in app.config");
+            if (Helpers.Appsettings.Port() == null) throw new Exception(Helpers.Appsettings.PortKey + " is not present in app.config");
+            if (Helpers.Appsettings.Scheme() == null) throw new Exception(Helpers.Appsettings.SchemeKey + " is not present in app.config");
+            if (Helpers.Appsettings.AuthServer() == null) throw new Exception(Helpers.Appsettings.AuthServerKey + " is not present in app.config");
 
             if (Helpers.Appsettings.SocketServerListenUrls() == null) throw new Exception("Websocket.Listeners not defined in app.config");
 
             _logger.Debug("config setting seem ok..");
             _logger.Debug("Url = {0}", Helpers.Appsettings.HostUrl());
-            _logger.Debug("{0} = {1}", Helpers.Appsettings.AuthUrlKey(), Helpers.Appsettings.AuthUrl());
-            _logger.Debug("{0} = {1}", Helpers.Appsettings.SocketServerUrlKey(), Helpers.Appsettings.SocketServerUrl());
+            _logger.Debug("Socket server Url = {0}", Helpers.Appsettings.SocketServerUrl());
+            _logger.Debug("Auth server Url= {0}", Helpers.Appsettings.AuthUrl());
             _logger.Debug("..done with config checks");
         }
 

@@ -62,7 +62,7 @@ namespace WebEntryPoint.WebSockets
                     _logger.Info("Sending serverSendList: '{0}'", message);
                     if (!_socketServerSendList.Any())
                     {
-                        _logger.Warn("Sendlist is empty, no messages will be sent, check app.config for {0}", Helpers.Appsettings.SocketServerUrlKey());
+                        _logger.Warn("Sendlist is empty, no messages will be sent, check app.config for {0}", Helpers.Appsettings.SocketListenersKey);
                     }
                     _socketServerSendList.ForEach(s => s.Send(message));
                 };
@@ -104,7 +104,7 @@ namespace WebEntryPoint.WebSockets
             var listenList = Helpers.Appsettings.SocketServerListenUrls().Split(',');
             foreach (var url in listenList)
             {
-                if (url.Trim() == socket.ConnectionInfo.Origin)
+                if (socket.ConnectionInfo.Origin.Contains(url.Trim()))
                     return true;
             }
             return false;
