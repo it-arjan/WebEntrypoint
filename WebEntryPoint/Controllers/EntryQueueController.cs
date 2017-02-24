@@ -67,10 +67,11 @@ namespace WebEntryPoint
                 received = (PostData)deserializer.ReadObject(ms);
                 received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
             }
+
             var webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
             webTracer.Send(received.SocketToken, "WebApi: '{0}' received.", received.MessageId);
 
-            _logger.Debug("local Token: {0}", getSessionToken());
+            _logger.Debug("local Token: {0}", GetOauthToken());
             _logger.Debug("remote Token: {0}", received.SocketToken);
 
             var dataBag = new DataBag();
@@ -79,9 +80,9 @@ namespace WebEntryPoint
             dataBag.PostBackUrl = received.PostBackUrl;
             dataBag.AddToContent(received.MessageId);
             dataBag.socketToken = received.SocketToken;
+            dataBag.UserId = received.UserId;
+            dataBag.SiliconToken = GetOauthToken();
 
-            //don't use frontend token to postbeack, it might get expired
-            //dataBag.IdToken = getSessionToken();
             var msg = new Message();
             msg.Body = dataBag;
 
@@ -95,7 +96,7 @@ namespace WebEntryPoint
             return Json(new { message = resultMsg });
         }
 
-        private string getSessionToken()
+        private string GetOauthToken()
         {
             return Request.Headers.Authorization.Parameter;
         }
@@ -109,6 +110,8 @@ namespace WebEntryPoint
             public string PostBackUrl { get; set; }
             [DataMember]
             public string SocketToken { get; set; }
+            [DataMember]
+            public string UserId { get; set; }
         }
     }
 }

@@ -181,7 +181,7 @@ namespace WebEntryPoint.MQ
 
         private async void GenericHandler(object sender, ReceiveCompletedEventArgs e, MSMQWrapper queue)
         {
-            // we could also cast the sender to a msmq, but not to MSMQWrapper
+            // we could also cast the sender to a msmq, but not to MSMQWrapper, so we use EndReceive
             System.Messaging.Message msg = queue.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
             _webTracer.Send(msgObj.socketToken, "Geneneric Handler received '{0}' from queue '{1}'", msgObj.Id, queue.Name);
@@ -189,39 +189,6 @@ namespace WebEntryPoint.MQ
             await ProcessMessageAsync(msg);
             queue.BeginReceive();
         }
-
-        //private async void Service1Handler(object sender, ReceiveCompletedEventArgs e)
-        //{
-        //    System.Messaging.Message msg = _service1Q.Q.EndReceive(e.AsyncResult);
-        //    DataBag msgObj = msg.Body as DataBag;
-        //    _webTracer.Send(msgObj.socketToken, "Service1Handler");
-
-        //    if (ProcessMsgPerMsg) await ProcessMessageAsync(msg);
-        //    else ProcessMessageAsync(msg);
-        //    _service1Q.BeginReceive(); 
-        //}
-
-        //private async void Service2Handler(object sender, ReceiveCompletedEventArgs e)
-        //{
-        //    System.Messaging.Message msg = _service2Q.Q.EndReceive(e.AsyncResult);
-        //    DataBag msgObj = msg.Body as DataBag;
-        //    _webTracer.Send(msgObj.socketToken, "Service2Handler");
-
-        //    if (ProcessMsgPerMsg) await ProcessMessageAsync(msg);
-        //    else ProcessMessageAsync(msg);
-        //    _service2Q.BeginReceive();
-        //}
-
-        //private async void Service3Handler(object sender, ReceiveCompletedEventArgs e)
-        //{
-        //    System.Messaging.Message msg = _service3Q.Q.EndReceive(e.AsyncResult);
-        //    DataBag msgObj = msg.Body as DataBag;
-        //    _webTracer.Send(msgObj.socketToken, "Service3Handler");
-
-        //    if (ProcessMsgPerMsg) await ProcessMessageAsync(msg);
-        //    else ProcessMessageAsync(msg);
-        //    _service3Q.BeginReceive();
-        //}
 
         private void ExitHandler(object sender, ReceiveCompletedEventArgs e)
         {

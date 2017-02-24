@@ -34,8 +34,9 @@ namespace WebEntryPoint.ServiceCall
         public int TryCount { get; set; }
         public string socketToken { get; set; }
         public string PostBackUrl { get; set; }
+        public string UserId { get; set; }
 
-        public string IdToken { get; set; }
+        public string SiliconToken { get; set; }
         public ProcessStatus Status { get; set; }
         public ProcessPhase CurrentPhase { get; set; }
 
@@ -68,7 +69,7 @@ namespace WebEntryPoint.ServiceCall
                     Status = ProcessStatus.ServiceSuccess;
                     break;
                 default:
-                    throw new Exception("Impossible Current phase!");
+                    throw new Exception("Impossible Current phase -> " + CurrentPhase);
             };
             TryCount = 0;
         }

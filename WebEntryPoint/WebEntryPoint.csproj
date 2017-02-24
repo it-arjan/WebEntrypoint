@@ -197,6 +197,7 @@
     <Compile Include="ServiceCall\Factory.cs" />
     <Compile Include="ServiceCall\FakeService.cs" />
     <Compile Include="ServiceCall\PostBackService.cs" />
+    <Compile Include="ServiceCall\TokenManager.cs" />
     <Compile Include="ServiceCall\WebService.cs" />
     <Compile Include="WebSockets\SocketServer.cs" />
     <Compile Include="WebSockets\SocketClient.cs" />
