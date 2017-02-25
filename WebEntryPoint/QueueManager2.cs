@@ -33,6 +33,8 @@ namespace WebEntryPoint.MQ
         private Dictionary<ProcessPhase, WebService> _serviceMap;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2));
         private WebTracer _webTracer;
+
+        private TokenManager _tokenManager;
         Stopwatch _ticker = new Stopwatch();
 
         public bool ProcessMsgPerMsg { get; set; }
@@ -59,13 +61,9 @@ namespace WebEntryPoint.MQ
         {
             ProcessedList = new List<string>();
             _serviceMap = new Dictionary<ProcessPhase, WebService>();
-
-            _serviceMap.Add(ProcessPhase.Service1, Factory.Create(ProcessPhase.Service1));
-            _serviceMap.Add(ProcessPhase.Service2, Factory.Create(ProcessPhase.Service2));
-            _serviceMap.Add(ProcessPhase.Service3, Factory.Create(ProcessPhase.Service3));
-            _serviceMap.Add(ProcessPhase.Completed, Factory.Create(ProcessPhase.Completed));
-
             _webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
+            _tokenManager = new TokenManager();
+
             Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q);
         }
 
@@ -115,6 +113,12 @@ namespace WebEntryPoint.MQ
 
                 _exitQ.SetFormatters(typeof(DataBag), typeof(string));
                 _exitQ.AddHandler(ExitHandler);
+
+                // adding service mapping
+                _serviceMap.Add(ProcessPhase.Service1, Factory.Create(ProcessPhase.Service1));
+                _serviceMap.Add(ProcessPhase.Service2, Factory.Create(ProcessPhase.Service2));
+                _serviceMap.Add(ProcessPhase.Service3, Factory.Create(ProcessPhase.Service3));
+                _serviceMap.Add(ProcessPhase.Completed, Factory.Create(ProcessPhase.Completed));
 
                 _initialized = true;
             }
@@ -170,6 +174,7 @@ namespace WebEntryPoint.MQ
             System.Messaging.Message msg = _entryQ.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
 
+            _tokenManager.SetToken(msgObj.SiliconToken);
             if (!_ticker.IsRunning) _ticker.Start();
             AddCount++;
 
@@ -199,19 +204,9 @@ namespace WebEntryPoint.MQ
             _webTracer.Send(msgObj.socketToken,
                 "Received '{0}' as completed, posting it back to you ", msgObj.Id);
 
-            var token = NewClientToken();
-
-            if (!token.IsError)
-            {
-                var status = PostBackUsingEasyHttp(token.AccessToken, msgObj);
-                _webTracer.Send(msgObj.socketToken,
-                    "Postback returned {0}", status);
-            }
-            else
-            {
-                _webTracer.Send(msgObj.socketToken,
-                    "Error getting the authorization token for the postback of your result.");
-            }
+            var status = PostBackUsingEasyHttp(_tokenManager.GetToken(), msgObj);
+            _webTracer.Send(msgObj.socketToken,
+                "Postback returned {0}", status);
             _exitQ.BeginReceive();
         }
 
@@ -226,19 +221,6 @@ namespace WebEntryPoint.MQ
             _logger.Debug("Postback returned '{0}': (1)", result);
 
             return result;
-        }
-
-        static TokenResponse NewClientToken()
-        {
-            var tokenUrl = string.Format ("{0}connect/token", Helpers.Appsettings.AuthUrl());
-            _logger.Debug("Getting a client token at {0}", tokenUrl);
-            var client = new TokenClient(tokenUrl, Helpers.Appsettings.SiliconClientId(), Helpers.Appsettings.SiliconClientSecret());
-
-            var token = client.RequestClientCredentialsAsync("MvcFrontEnd").Result;
-            if (token.IsError) _logger.Error("Error getting Token for Client MvcFrontEnd: {0} ", token.Error);
-            else _logger.Debug("Token obtained");
-
-            return token;
         }
 
         private async Task PostBackUsingHttpClient(DataBag msgObj)

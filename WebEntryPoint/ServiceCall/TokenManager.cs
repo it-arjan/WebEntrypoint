@@ -12,27 +12,53 @@ namespace WebEntryPoint.ServiceCall
     {
         private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager));
         private string _jwt;
-
+        private object changeToken = new object();
         public TokenManager()
         {
-
+            _jwt = null;
         }
 
-        public void SetToken(string jwt)
+        public void SetToken(string freshJwt)
         {
-            _jwt = jwt;
+            lock (changeToken)
+            {
+                // always set the frehToken if it's valid
+                if (freshJwt != null && Valid(freshJwt))
+                {
+                    _jwt = freshJwt;
+                    _logger.Debug("SetToken: Setting the fresh Token because it's good.");
+
+                }
+                else if (_jwt == null || !Valid(_jwt))
+                {
+                    _logger.Debug("SetToken: the fresh Token you're try to set is no good or expired: '{0}'. \n..getting a new one", freshJwt);
+                    _jwt = GetNewClientToken("MvcFrontEnd").AccessToken;
+                }
+                else _logger.Debug("SetToken: freh token invalid but old token still valid.");
+            }
         }
 
-        public string GetToken(string jwt, string scope)
+        public string GetToken()
         {
-            if (!StillValid(_jwt)) _jwt = GetSiliconClientToken(scope).AccessToken;
+            // getting it for scope "MvcFrontEnd" should be okay as silicon client as access to all services
+            lock (changeToken)
+            {
+                if (!Valid(_jwt))
+                {
+                    _logger.Debug("GetToken: getting new token");
+                    _jwt = GetNewClientToken("MvcFrontEnd").AccessToken;
+                }
+                else _logger.Debug("GetToken: re-using existing token");
 
+
+            }
             return _jwt;
         }
 
-        private bool StillValid(string jwt)
+        private bool Valid(string jwt)
         {
-            // Pasted Code
+            // #PastedCode
+            //
             //=> Retrieve the 2nd part of the JWT token (this the JWT payload)
             var payloadBytes = jwt.Split('.')[1];
 
@@ -50,10 +76,14 @@ namespace WebEntryPoint.ServiceCall
             //=> Comparing the exp timestamp to the current timestamp
             var currentTimestamp = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
 
-            return currentTimestamp > (payload.Exp - 60); // notice the new -60, it's a margin of error in case of long request or bad time synchronization
+            var result = currentTimestamp + 10 < payload.Exp; // 10 sec is just a margin
+
+            if (!result) _logger.Debug("Valid: Existing token expired.");
+
+            return result;
         }
 
-        private TokenResponse GetSiliconClientToken(string scope)
+        private TokenResponse GetNewClientToken(string scope)
         {
             var tokenUrl = string.Format("{0}connect/token", Helpers.Appsettings.AuthUrl());
             _logger.Debug("Getting a silicon client token at {0}", tokenUrl);
