@@ -35,7 +35,7 @@ namespace WebEntryPoint.MQ
         private WebTracer _webTracer;
 
         private TokenManager _tokenManager;
-        Stopwatch _ticker = new Stopwatch();
+        Stopwatch _BatchTicker = new Stopwatch();
 
         public bool ProcessMsgPerMsg { get; set; }
         public bool UseTimedRetry { get; set; }
@@ -49,7 +49,7 @@ namespace WebEntryPoint.MQ
                 _doneCount = value;
                 if (DoneCount > 0 && DoneCount == AddCount)
                 {
-                    _ticker.Stop();
+                    _BatchTicker.Stop();
                     //MessageBox.Show(string.Format("Done in  {0}", _ticker.Elapsed.ToString("mm\\:ss\\.fff")));
                 }
             }
@@ -73,7 +73,7 @@ namespace WebEntryPoint.MQ
             {
                 DoneCount = 0;
                 AddCount = 0;
-                _ticker.Reset();
+                _BatchTicker.Reset();
                 ProcessedList.Clear();
             }
         }
@@ -174,12 +174,11 @@ namespace WebEntryPoint.MQ
             System.Messaging.Message msg = _entryQ.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
 
-            _tokenManager.SetToken(msgObj.SiliconToken);
-            if (!_ticker.IsRunning) _ticker.Start();
+            if (!_BatchTicker.IsRunning) _BatchTicker.Start();
             AddCount++;
 
             _service1Q.Send(msg);
-            _webTracer.Send(msgObj.socketToken, "EntryHandler: Dropped {0} in the Q for service1", msgObj.Id);
+            _webTracer.Send(msgObj.socketToken, "EntryHandler: Dropped {0} in the Q for service1", msgObj.MessageId);
 
             _entryQ.BeginReceive(); 
         }
@@ -189,7 +188,7 @@ namespace WebEntryPoint.MQ
             // we could also cast the sender to a msmq, but not to MSMQWrapper, so we use EndReceive
             System.Messaging.Message msg = queue.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
-            _webTracer.Send(msgObj.socketToken, "Geneneric Handler received '{0}' from queue '{1}'", msgObj.Id, queue.Name);
+            _webTracer.Send(msgObj.socketToken, "Geneneric Handler received '{0}' from queue '{1}'", msgObj.MessageId, queue.Name);
 
             await ProcessMessageAsync(msg);
             queue.BeginReceive();
@@ -197,53 +196,55 @@ namespace WebEntryPoint.MQ
 
         private void ExitHandler(object sender, ReceiveCompletedEventArgs e)
         {
-            //send done notification to MVC app?
+
             System.Messaging.Message msg = _exitQ.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
 
             _webTracer.Send(msgObj.socketToken,
-                "Received '{0}' as completed, posting it back to you ", msgObj.Id);
+                "Received '{0}' as completed, posting it back..", msgObj.MessageId);
 
-            var status = PostBackUsingEasyHttp(_tokenManager.GetToken(), msgObj);
-            _webTracer.Send(msgObj.socketToken,
-                "Postback returned {0}", status);
+            var status = PostBackUsingEasyHttp(_tokenManager.GetToken(Helpers.IdSrv3.ScopeMvcFrontEnd), msgObj.PostBackUrl, new PostbackData(msgObj));
+            _webTracer.Send(msgObj.socketToken, "Postback returned {0}", status);
+            if (status == HttpStatusCode.OK) _webTracer.Send(msgObj.socketToken, msgObj.doneToken);
             _exitQ.BeginReceive();
         }
 
-        private HttpStatusCode PostBackUsingEasyHttp(string token, DataBag msgObj)
+        private HttpStatusCode PostBackUsingEasyHttp(string token, string postbackUrl, PostbackData data)
         {
-            _logger.Debug("Calling postback '{0}'", msgObj.PostBackUrl);
+            _logger.Debug("Postback url='{0}'", postbackUrl);
+            _logger.Debug("post back values: {0}", JsonConvert.SerializeObject(data));
             var eHttp = new EasyHttp.Http.HttpClient();
             var auth_header = string.Format("Bearer {0}", token);
 
             eHttp.Request.AddExtraHeader("Authorization", auth_header);
-            var result= eHttp.Post(msgObj.PostBackUrl, msgObj, HttpContentTypes.ApplicationJson).StatusCode;
+            var result= eHttp.Post(postbackUrl, data, HttpContentTypes.ApplicationJson).StatusCode;
             _logger.Debug("Postback returned '{0}': (1)", result);
 
             return result;
         }
 
-        private async Task PostBackUsingHttpClient(DataBag msgObj)
-        {
-            using (var client = new System.Net.Http.HttpClient())
-            {
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", msgObj.socketToken);
+        //private async Task PostBackUsingHttpClient(DataBag msgObj)
+        //{
+        //    using (var client = new System.Net.Http.HttpClient())
+        //    {
+        //        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", msgObj.socketToken);
  
-                var byteContent = SerializeDataBag(msgObj);
-                var response = await client.PostAsync(msgObj.PostBackUrl, byteContent);
+        //        var byteContent = SerializeDataBag(msgObj);
+        //        _logger.Debug("posting back: {0}", byteContent.ToString());
+        //        var response = await client.PostAsync(msgObj.PostBackUrl, byteContent);
 
-                _logger.Debug("postback returned '{0}'", response.StatusCode);
-                _webTracer.Send(msgObj.socketToken, "Posting back the result of {0} to {1} returned {2}",
-                                        msgObj.Id, msgObj.PostBackUrl, response.StatusCode);
-            }
-        }
+        //        _logger.Debug("postback returned '{0}'", response.StatusCode);
+        //        _webTracer.Send(msgObj.socketToken, "Posting back the result of {0} to {1} returned {2}",
+        //                                msgObj.Id, msgObj.PostBackUrl, response.StatusCode);
+        //    }
+        //}
 
-        private ByteArrayContent SerializeDataBag(DataBag msgObj)
-        {
-            var myContent = JsonConvert.SerializeObject(msgObj);
-            var buffer = System.Text.Encoding.UTF8.GetBytes(myContent);
-            return new ByteArrayContent(buffer);
-        }
+        //private ByteArrayContent SerializeDataBag(DataBag msgObj)
+        //{
+        //    var myContent = JsonConvert.SerializeObject(msgObj);
+        //    var buffer = System.Text.Encoding.UTF8.GetBytes(myContent);
+        //    return new ByteArrayContent(buffer);
+        //}
 
         public string StopAll()
         {
@@ -287,7 +288,7 @@ namespace WebEntryPoint.MQ
             DataBag dataBag = msg.Body as DataBag;
             if (dataBag != null)
             {
-                _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", dataBag.CurrentPhase, dataBag.Id);
+                _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", dataBag.CurrentPhase, dataBag.MessageId);
 
                 var service = _serviceMap[dataBag.CurrentPhase];
                 dataBag.TryCount++;
@@ -298,7 +299,7 @@ namespace WebEntryPoint.MQ
                 if (dataBag.Error)
                 {
                     int delay = 1;
-                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={2}) failed for {0}, Retry in {3} secs", dataBag.Id, dataBag.CurrentPhase, service.Name, delay);
+                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={2}) failed for {0}, Retry in {3} secs", dataBag.MessageId, dataBag.CurrentPhase, service.Name, delay);
                     if (UseTimedRetry) ReQueueWithTimedDelay(msg, delay);
                     else await ReQueueWithTaskDelay(msg, delay);
                 }
@@ -307,7 +308,7 @@ namespace WebEntryPoint.MQ
                     var oldPhase = dataBag.CurrentPhase;
                     dataBag.NextService();
                     dataBag.TryCount = 0;
-                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={3}) succeeded, dropping {0} in the MSMQ for {2}", dataBag.Id, oldPhase, dataBag.CurrentPhase, service.Name);
+                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={3}) succeeded, dropping {0} in the MSMQ for {2}", dataBag.MessageId, oldPhase, dataBag.CurrentPhase, service.Name);
                     GetQueue(dataBag.CurrentPhase).Send(msg, dataBag.Label);
                 }
             }
@@ -338,14 +339,23 @@ namespace WebEntryPoint.MQ
             GetQueue(msgObj.CurrentPhase).Send(msg, msgObj.Label);
         }
 
-         public class EventWithQueue : EventArgs
+        public class PostbackData
         {
-            public MSMQWrapper queue{ get; set; }
-            public EventWithQueue(object q)
+            public PostbackData(DataBag databag)
             {
-                queue = q as MSMQWrapper;
-
+                MessageId = databag.MessageId;
+                Content = databag.Content;
+                Started = databag.Started;
+                Duration = (DateTime.Now - databag.Started).TotalSeconds.ToString();
+                UserName = databag.UserName;
             }
+            public string MessageId { get; set; }
+            public string UserName { get; set; }
+            public DateTime Started { get; set; }
+
+            public string Duration { get; set; }
+            public string Content { get; set; }
+
         }
     }
 

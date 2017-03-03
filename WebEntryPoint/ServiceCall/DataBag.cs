@@ -26,15 +26,16 @@ namespace WebEntryPoint.ServiceCall
             CurrentPhase = ProcessPhase.Service1;
         }
 
-        public string StartTime { get; set; }
+        public DateTime Started { get; set; }
         public string Duration { get; set; }
         public string Content { get; set; }
         public string Label { get; set; }
-        public string Id { get; set; }
+        public string MessageId { get; set; }
         public int TryCount { get; set; }
         public string socketToken { get; set; }
+        public string doneToken { get; set; }
         public string PostBackUrl { get; set; }
-        public string UserId { get; set; }
+        public string UserName { get; set; }
 
         public string SiliconToken { get; set; }
         public ProcessStatus Status { get; set; }

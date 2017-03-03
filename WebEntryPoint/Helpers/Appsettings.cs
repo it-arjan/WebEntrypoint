@@ -20,6 +20,12 @@ namespace WebEntryPoint.Helpers
         public const string SocketPortKey = "websocket.port";
         public const string SocketSchemeKey = "websocket.scheme";
 
+        public const string EntryQueueKey = "entryQueue";
+        public const string Service1QueueKey = "service1Queue";
+        public const string Service2QueueKey = "service2Queue";
+        public const string Service3QueueKey = "service3Queue";
+        public const string ExitQueueKey = "exitQueue";
+
         public static bool Ssl()
         {
             return Scheme() == "https";
@@ -79,6 +85,27 @@ namespace WebEntryPoint.Helpers
         public static string SiliconClientSecret()
         {
             return ConfigurationManager.AppSettings.Get(SiliconClientSecretKey);
+        }
+
+        public static string EntryQueue()
+        {
+            return ConfigurationManager.AppSettings.Get(EntryQueueKey);
+        }
+        public static string Service1Queue()
+        {
+            return ConfigurationManager.AppSettings.Get(Service1QueueKey);
+        }
+        public static string Service2Queue()
+        {
+            return ConfigurationManager.AppSettings.Get(Service2QueueKey);
+        }
+        public static string Service3Queue()
+        {
+            return ConfigurationManager.AppSettings.Get(Service3QueueKey);
+        }
+        public static string ExitQueue()
+        {
+            return ConfigurationManager.AppSettings.Get(ExitQueueKey);
         }
     }
 }

@@ -11,52 +11,34 @@ namespace WebEntryPoint.ServiceCall
     public class TokenManager
     {
         private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager));
-        private string _jwt;
+        private Dictionary<string, string> _tokenMap;
         private object changeToken = new object();
         public TokenManager()
         {
-            _jwt = null;
+            _tokenMap = new Dictionary<string, string>();
         }
 
-        public void SetToken(string freshJwt)
+        public string GetToken(string scope)
         {
             lock (changeToken)
             {
-                // always set the frehToken if it's valid
-                if (freshJwt != null && Valid(freshJwt))
+                var token = _tokenMap.ContainsKey(scope) ? _tokenMap[scope] : null;
+                if (token != null && !Expired(token))
                 {
-                    _jwt = freshJwt;
-                    _logger.Debug("SetToken: Setting the fresh Token because it's good.");
-
+                    _logger.Debug("GetToken: re-using existing token");
                 }
-                else if (_jwt == null || !Valid(_jwt))
+                else
                 {
-                    _logger.Debug("SetToken: the fresh Token you're try to set is no good or expired: '{0}'. \n..getting a new one", freshJwt);
-                    _jwt = GetNewClientToken("MvcFrontEnd").AccessToken;
+                    _logger.Debug("GetToken: getting a new token");
+                    _tokenMap[scope] = GetNewClientToken(scope).AccessToken;
                 }
-                else _logger.Debug("SetToken: freh token invalid but old token still valid.");
             }
+            return _tokenMap[scope];
         }
 
-        public string GetToken()
+        private bool Expired(string jwt)
         {
-            // getting it for scope "MvcFrontEnd" should be okay as silicon client as access to all services
-            lock (changeToken)
-            {
-                if (!Valid(_jwt))
-                {
-                    _logger.Debug("GetToken: getting new token");
-                    _jwt = GetNewClientToken("MvcFrontEnd").AccessToken;
-                }
-                else _logger.Debug("GetToken: re-using existing token");
-
-
-            }
-            return _jwt;
-        }
-
-        private bool Valid(string jwt)
-        {
+            _logger.Debug("Valid: Checking expiration of token {0}", jwt);
             // #PastedCode
             //
             //=> Retrieve the 2nd part of the JWT token (this the JWT payload)
@@ -73,13 +55,14 @@ namespace WebEntryPoint.ServiceCall
             var payloadStr = Encoding.UTF8.GetString(payloadBytesDecoded, 0, payloadBytesDecoded.Length);
             var payload = JsonConvert.DeserializeAnonymousType(payloadStr, new { Exp = 0UL });
 
+            _logger.Debug("Valid: the token is valid until {0}.", new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(payload.Exp));
+
             //=> Comparing the exp timestamp to the current timestamp
             var currentTimestamp = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
 
-            var result = currentTimestamp + 10 < payload.Exp; // 10 sec is just a margin
-
-            if (!result) _logger.Debug("Valid: Existing token expired.");
-
+            var result = currentTimestamp + 10 > payload.Exp; // 10 sec is just a margin
+            if (result) _logger.Debug("Valid: token expired.");
+            else _logger.Debug("Valid: token still valid.");
             return result;
         }
 

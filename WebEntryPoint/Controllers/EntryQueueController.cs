@@ -15,6 +15,7 @@ using System.Runtime.Serialization.Json;
 using System.IO;
 using System.Runtime.Serialization;
 using NLogWrapper;
+using Newtonsoft.Json;
 
 namespace WebEntryPoint
 {
@@ -56,37 +57,30 @@ namespace WebEntryPoint
             }
         }
 
-        public async Task<IHttpActionResult> Post()
+        public IHttpActionResult Post(PostData received)
         {
-            var postedstring = await Request.Content.ReadAsStringAsync();
-            PostData received;
-            using (var ms = new MemoryStream(Encoding.Unicode.GetBytes(postedstring)))
-            {
-                // Deserialization from JSON  
-                DataContractJsonSerializer deserializer = new DataContractJsonSerializer(typeof(PostData));
-                received = (PostData)deserializer.ReadObject(ms);
-                received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
-            }
+            _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
+
+            received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
 
             var webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
             webTracer.Send(received.SocketToken, "WebApi: '{0}' received.", received.MessageId);
 
-            _logger.Debug("local Token: {0}", GetOauthToken());
-            _logger.Debug("remote Token: {0}", received.SocketToken);
 
             var dataBag = new DataBag();
             dataBag.Label = received.MessageId + " - " + DateTime.Now.ToShortTimeString();
-            dataBag.Id = received.MessageId;
+            dataBag.MessageId = received.MessageId;
             dataBag.PostBackUrl = received.PostBackUrl;
-            dataBag.AddToContent(received.MessageId);
+            dataBag.AddToContent("Service output log for '{0}'\n", received.MessageId);
             dataBag.socketToken = received.SocketToken;
-            dataBag.UserId = received.UserId;
-            dataBag.SiliconToken = GetOauthToken();
+            dataBag.doneToken = received.DoneToken;
+            dataBag.UserName = received.UserName;
+            dataBag.Started = DateTime.Now;
 
-            var msg = new Message();
+            var msg = new System.Messaging.Message();
             msg.Body = dataBag;
 
-            var entryQueue = new MSMQWrapper(@".\Private$\webentry");
+            var entryQueue = new MSMQWrapper(Helpers.Appsettings.EntryQueue());
             entryQueue.SetFormatters(typeof(DataBag));
             entryQueue.Send(msg, dataBag.Label);
 
@@ -101,17 +95,13 @@ namespace WebEntryPoint
             return Request.Headers.Authorization.Parameter;
         }
 
-        [DataContract]
-        private class PostData
+        public class PostData
         {
-            [DataMember]
             public string MessageId { get; set; }
-            [DataMember]
             public string PostBackUrl { get; set; }
-            [DataMember]
             public string SocketToken { get; set; }
-            [DataMember]
-            public string UserId { get; set; }
+            public string DoneToken { get; set; }
+            public string UserName { get; set; }
         }
     }
 }

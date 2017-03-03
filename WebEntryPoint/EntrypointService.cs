@@ -43,17 +43,20 @@ namespace WebEntryPoint
         private void CheckHealth()
         {
             _logger.Debug("Checking config settings..");
-            _entryQueue = ConfigurationManager.AppSettings.Get("entryQueue");
-            _service1Queue = ConfigurationManager.AppSettings.Get("service1Queue");
-            _service2Queue = ConfigurationManager.AppSettings.Get("service2Queue");
-            _service3Queue = ConfigurationManager.AppSettings.Get("service3Queue");
-            _exitQueue = ConfigurationManager.AppSettings.Get("exitQueue");
+            _entryQueue = Helpers.Appsettings.EntryQueue();
+            _service1Queue = Helpers.Appsettings.Service1Queue();
+            _service2Queue = Helpers.Appsettings.Service2Queue();
+            _service3Queue = Helpers.Appsettings.Service3Queue();
+            _exitQueue = Helpers.Appsettings.ExitQueue();
 
-            if (_entryQueue == null ||
-                _service1Queue == null ||
-                _service2Queue == null ||
-                _service3Queue == null ||
-                _exitQueue == null) throw new Exception("one or more service queues are not defined in app.config");
+            var queuesNotDefined = string.Empty;
+            if (_entryQueue == null) queuesNotDefined += Helpers.Appsettings.EntryQueueKey + ", ";
+            if (_service1Queue == null) queuesNotDefined += Helpers.Appsettings.Service1QueueKey + ", ";
+            if (_service2Queue == null) queuesNotDefined += Helpers.Appsettings.Service2QueueKey + ", ";
+            if (_service3Queue == null) queuesNotDefined += Helpers.Appsettings.Service3QueueKey + ", ";
+            if (_exitQueue == null) queuesNotDefined += ", " + Helpers.Appsettings.ExitQueueKey;
+
+            if (queuesNotDefined != string.Empty) throw new Exception("The following queues settings are not defined in app.config: " + queuesNotDefined);
 
             if (Helpers.Appsettings.SiliconClientId() == null) throw new Exception("setting 'SiliconClientId' is not present in app.config");
             if (Helpers.Appsettings.SiliconClientSecret() == null) throw new Exception("setting 'SiliconClientSecret' is not present in app.config");
@@ -65,7 +68,7 @@ namespace WebEntryPoint
 
             if (Helpers.Appsettings.SocketServerListenUrls() == null) throw new Exception("Websocket.Listeners not defined in app.config");
 
-            _logger.Debug("config setting seem ok..");
+            _logger.Debug("config settings seem ok..");
             _logger.Debug("Url = {0}", Helpers.Appsettings.HostUrl());
             _logger.Debug("Socket server Url = {0}", Helpers.Appsettings.SocketServerUrl());
             _logger.Debug("Auth server Url= {0}", Helpers.Appsettings.AuthUrl());

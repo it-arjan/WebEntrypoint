@@ -172,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\EntryQueueController.cs" />
+    <Compile Include="Helpers\IdSrv3.cs" />
     <Compile Include="Helpers\Appsettings.cs" />
     <Compile Include="Helpers\RegEx.cs" />
     <Compile Include="Helpers\Security.cs" />

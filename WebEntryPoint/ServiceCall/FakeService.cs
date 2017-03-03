@@ -24,33 +24,34 @@ namespace WebEntryPoint.ServiceCall
         {
 
             Random rnd = new Random();
-            await Task.Delay(rnd.Next(0, 2000));
+            var delaySec = 2;
+            var failFactor = 3;
+            var failRate = Decimal.Round((decimal)failFactor / 10 * 100);
 
-            ProcessStatus nextStatus = GetRandomStatus();
+            await Task.Delay(rnd.Next(0, 1000 * delaySec));
 
-            if (nextStatus != ProcessStatus.ServiceSuccess)
-            {
-                msgObj.Status = nextStatus;
-            }
- 
+            msgObj.Status = GetRandomStatus(failFactor);
+            //if (nextStatus != ProcessStatus.ServiceSuccess)
+            //{
+            //    msgObj.Status = nextStatus;
+            //}
 
-            msgObj.AddToContent("FakeService: call to {0} returned {1} on attempt ({2}) .", msgObj.CurrentPhase, msgObj.Status, msgObj.TryCount);
-            if (msgObj.CurrentPhase != ProcessPhase.Completed) msgObj.AddToContent("Ready for {0}.", msgObj.CurrentPhase);
+            msgObj.AddToContent("{0}: FakeService. Delay: 0-{3} secs, Failrate: {4}%, returned {1} on attempt ({2}) .", msgObj.CurrentPhase, msgObj.Status, msgObj.TryCount, delaySec, failRate);
 
             return msgObj;
         }
 
-        private ProcessStatus GetRandomStatus()
+        private ProcessStatus GetRandomStatus(int failFactor)
         {
             Random rnd = new Random();
-            var moduloNr = rnd.Next(0, 20) % 10;
-            if (moduloNr < 3)
+            var moduloNr = rnd.Next(0, 10) % 10;
+            if (moduloNr < failFactor)
             {
                 return ProcessStatus.ServiceFailed;
             }
             else
             {
-                return ProcessStatus.ReadyFor;
+                return ProcessStatus.ServiceSuccess;
             }
         }
 
