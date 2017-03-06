@@ -31,7 +31,7 @@ namespace WebEntryPoint.MQ
         private MSMQWrapper _service3Q;
 
         private Dictionary<ProcessPhase, WebService> _serviceMap;
-        static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2));
+        static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
         private WebTracer _webTracer;
 
         private TokenManager _tokenManager;
@@ -211,14 +211,14 @@ namespace WebEntryPoint.MQ
 
         private HttpStatusCode PostBackUsingEasyHttp(string token, string postbackUrl, PostbackData data)
         {
-            _logger.Debug("Postback url='{0}'", postbackUrl);
+            _logger.Info("Postback url='{0}'", postbackUrl);
             _logger.Debug("post back values: {0}", JsonConvert.SerializeObject(data));
             var eHttp = new EasyHttp.Http.HttpClient();
             var auth_header = string.Format("Bearer {0}", token);
 
             eHttp.Request.AddExtraHeader("Authorization", auth_header);
             var result= eHttp.Post(postbackUrl, data, HttpContentTypes.ApplicationJson).StatusCode;
-            _logger.Debug("Postback returned '{0}': (1)", result);
+            _logger.Info("Postback returned '{0}': (1)", result);
 
             return result;
         }

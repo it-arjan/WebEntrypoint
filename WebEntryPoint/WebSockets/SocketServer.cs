@@ -12,8 +12,8 @@ namespace WebEntryPoint.WebSockets
 
     public class SocketServer
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer));
-        private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog));
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.Appsettings.LogLevel());
         private WebSocketServer _socketServer;
         private List<IWebSocketConnection> _socketServerSendList;
         private string[] _listenList;
@@ -25,40 +25,39 @@ namespace WebEntryPoint.WebSockets
 
         public void Start(string url)
         {
-            _logger.Debug("Starting on ip:port {0}", url);
+            _logger.Info("Starting on ip:port {0}", url);
             _socketServer = new WebSocketServer(url);
             _listenList = Helpers.Appsettings.SocketServerListenUrls().Split(',');
-            _logger.Debug("Listening hostnames found in '{0}'", Helpers.Appsettings.SocketListenersKey);
+            _logger.Info("Listening hostnames found in '{0}'", Helpers.Appsettings.SocketListenersKey);
             foreach (var hostname in _listenList)
             {
-                _logger.Debug("-{0}", hostname);
+                _logger.Info("-{0}", hostname);
             }
             
             if (url.Contains("wss"))
             {
                 _logger.Info("Server loading certificate from the store");
                 _socketServer.Certificate = Helpers.Security.GetCertificateFromStore(Helpers.Appsettings.Hostname());
-                _logger.Info("..certificate loaded");
             }
             _socketServer.Start(socket =>
             {
                 socket.OnOpen = () =>
                 {
-                    _logger.Info("Socket Opened by Client: {0}", socket.ConnectionInfo.Origin);
+                    _logger.Debug("Socket Opened by Client: {0}", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
                         _socketServerSendList.Add(socket); 
-                        _logger.Info("Client '{0}' added to sendlist", socket.ConnectionInfo.Origin);
+                        _logger.Debug("Client '{0}' added to sendlist", socket.ConnectionInfo.Origin);
                     }
                     else
                     {
-                        _logger.Info("Client '{0}' *not* added to sendlist", socket.ConnectionInfo.Origin);
+                        _logger.Debug("Client '{0}' *not* added to sendlist", socket.ConnectionInfo.Origin);
                     }
                 };
 
                 socket.OnClose = () =>
                 {
-                    _logger.Info("Socket CLOSED by Client originating from: '{0}'", socket.ConnectionInfo.Origin);
+                    _logger.Debug("Socket CLOSED by Client originating from: '{0}'", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
                         _socketServerSendList.Remove(socket);
@@ -67,7 +66,7 @@ namespace WebEntryPoint.WebSockets
 
                 socket.OnMessage = message =>
                 {
-                    _logger.Info("Sending serverSendList: '{0}'", message);
+                    _logger.Debug("Sending serverSendList: '{0}'", message);
                     if (!_socketServerSendList.Any())
                     {
                         _logger.Warn("Sendlist is empty, no messages will be sent, check app.config for {0}", Helpers.Appsettings.SocketListenersKey);

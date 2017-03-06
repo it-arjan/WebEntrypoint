@@ -118,8 +118,8 @@
       <HintPath>..\Packages\NLog.4.3.11\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NLogWrapper">
-      <HintPath>..\Packages\NLog.Wrapper.ZeroConfig.1.0.0\lib\net40\NLogWrapper.dll</HintPath>
+    <Reference Include="NLogWrapper, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\Packages\NLog.Wrapper.ZeroConfig.1.1.3\lib\net40\NLogWrapper.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">

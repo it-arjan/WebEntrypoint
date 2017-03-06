@@ -22,7 +22,7 @@ namespace WebEntryPoint
         private IDisposable _httpServer;
         private QueueManager2 queueManager;
 
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntrypointService));
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntrypointService), Helpers.Appsettings.LogLevel());
 
         private string _entryQueue;
         private string _service1Queue;
@@ -36,13 +36,13 @@ namespace WebEntryPoint
         {
             InitializeComponent();
 
-            _logger.Info("CurrentDirectory=" + AppDomain.CurrentDomain.BaseDirectory);
+            _logger.Debug("CurrentDirectory=" + AppDomain.CurrentDomain.BaseDirectory);
             CheckHealth();
         }
 
         private void CheckHealth()
         {
-            _logger.Debug("Checking config settings..");
+            _logger.Info("Checking config settings..");
             _entryQueue = Helpers.Appsettings.EntryQueue();
             _service1Queue = Helpers.Appsettings.Service1Queue();
             _service2Queue = Helpers.Appsettings.Service2Queue();
@@ -68,10 +68,10 @@ namespace WebEntryPoint
 
             if (Helpers.Appsettings.SocketServerListenUrls() == null) throw new Exception("Websocket.Listeners not defined in app.config");
 
-            _logger.Debug("config settings seem ok..");
-            _logger.Debug("Url = {0}", Helpers.Appsettings.HostUrl());
-            _logger.Debug("Socket server Url = {0}", Helpers.Appsettings.SocketServerUrl());
-            _logger.Debug("Auth server Url= {0}", Helpers.Appsettings.AuthUrl());
+            _logger.Info("config settings seem ok..");
+            _logger.Info("Url = {0}", Helpers.Appsettings.HostUrl());
+            _logger.Info("Socket server Url = {0}", Helpers.Appsettings.SocketServerUrl());
+            _logger.Info("Auth server Url= {0}", Helpers.Appsettings.AuthUrl());
             _logger.Debug("..done with config checks");
         }
 
@@ -81,14 +81,13 @@ namespace WebEntryPoint
 
             var url = Helpers.Appsettings.HostUrl();
             _httpServer = WebApp.Start<HttpHost>(url);
-            _logger.Info("Listening on {0}", url);
 
             _logger.Info("Starting socket server.");
             _socketServer = new WebSockets.SocketServer();
-            //_socketServer.WireFleckLogging();
+            _socketServer.WireFleckLogging();
             _socketServer.Start(Helpers.Appsettings.SocketServerUrl().Replace(Helpers.Appsettings.Hostname(), "0.0.0.0"));
 
-            _logger.Info("Starting queuemanager in seprate thread.");
+            _logger.Info("Starting queuemanager..");
              queueManager = new QueueManager2(_entryQueue, _service1Queue, _service2Queue, _service3Queue, _exitQueue);
             Thread t = new Thread(queueManager.StartListening);
             t.Start();  

@@ -25,6 +25,7 @@ namespace WebEntryPoint.Helpers
         public const string Service2QueueKey = "service2Queue";
         public const string Service3QueueKey = "service3Queue";
         public const string ExitQueueKey = "exitQueue";
+        public const string LogLevelKey = "log.level";
 
         public static bool Ssl()
         {
@@ -75,6 +76,11 @@ namespace WebEntryPoint.Helpers
         public static string SocketServerListenUrls()
         {
             return ConfigurationManager.AppSettings.Get(SocketListenersKey);
+        }
+
+        public static string LogLevel()
+        {
+            return ConfigurationManager.AppSettings.Get(LogLevelKey);
         }
 
         public static string SiliconClientId()

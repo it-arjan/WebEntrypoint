@@ -11,7 +11,7 @@ namespace WebEntryPoint.WebSockets
     class SocketClient
     {
         private ClientWebSocket _wsClient;
-        private ILogger _logger = LogManager.CreateLogger(typeof(SocketClient));
+        private ILogger _logger = LogManager.CreateLogger(typeof(SocketClient), Helpers.Appsettings.LogLevel());
         object _serializer = new object();
         public SocketClient()
         {
@@ -24,12 +24,12 @@ namespace WebEntryPoint.WebSockets
             {
                 if (!Connected())
                 {
-                    _logger.Debug("Connecting to {0}", url);
+                    _logger.Info("Connecting to {0}", url);
                     _wsClient = new ClientWebSocket();
 
                     if (Helpers.Appsettings.Ssl())
                     {
-                        _logger.Debug("Loading certificate from store");
+                        _logger.Info("Loading certificate from store");
                         _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.Appsettings.Hostname()));
                     }
                     var tokSrc = new CancellationTokenSource();
@@ -37,8 +37,7 @@ namespace WebEntryPoint.WebSockets
                     var task = _wsClient.ConnectAsync(new Uri(url), tokSrc.Token);
                     task.Wait(); task.Dispose();
 
-                    _logger.Debug("Opened ClientWebSocket to {0}", url);
-                    _logger.Debug("SubProtocol: {0}", _wsClient.SubProtocol ?? "-none-");
+                    _logger.Info("Opened ClientWebSocket to {0}", url);
                     tokSrc.Dispose();
                 }
             }

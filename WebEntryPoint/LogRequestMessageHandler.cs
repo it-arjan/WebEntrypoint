@@ -13,7 +13,7 @@ namespace WebEntryPoint
 
     public class LogRequestMessageHandler : DelegatingHandler
     {
-        private static ILogger _logger = LogManager.CreateLogger(typeof(LogRequestMessageHandler));
+        private static ILogger _logger = LogManager.CreateLogger(typeof(LogRequestMessageHandler), Helpers.Appsettings.LogLevel());
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try
@@ -26,7 +26,7 @@ namespace WebEntryPoint
                 }
                 var referrer = request.GetOwinContext().Request.RemoteIpAddress;
                 referrer = referrer ?? "unknown";
-                _logger.Debug("incoming request for {0} by user {1}. Referrer: {2}", request.RequestUri, userName, referrer);
+                _logger.Info("incoming request for {0} by user {1}. Referrer: {2}", request.RequestUri, userName, referrer);
             }
             catch (Exception ex)
             {

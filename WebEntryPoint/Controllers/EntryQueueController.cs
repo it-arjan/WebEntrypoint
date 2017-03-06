@@ -22,7 +22,7 @@ namespace WebEntryPoint
     [Authorize]
     public class EntryQueueController: ApiController
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController));
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.Appsettings.LogLevel());
         //[EnableCors(origins: "http://local.frontend,https://local.frontend,http://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com,https://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com", headers: "*", methods: "*")]
         public IHttpActionResult Get()
         {

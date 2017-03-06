@@ -10,7 +10,7 @@ namespace WebEntryPoint.ServiceCall
 {
     public class TokenManager
     {
-        private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager));
+        private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager), Helpers.Appsettings.LogLevel());
         private Dictionary<string, string> _tokenMap;
         private object changeToken = new object();
         public TokenManager()
@@ -38,7 +38,7 @@ namespace WebEntryPoint.ServiceCall
 
         private bool Expired(string jwt)
         {
-            _logger.Debug("Valid: Checking expiration of token {0}", jwt);
+            _logger.Debug("Expired: Checking expiration of token {0}", jwt);
             // #PastedCode
             //
             //=> Retrieve the 2nd part of the JWT token (this the JWT payload)
@@ -55,26 +55,25 @@ namespace WebEntryPoint.ServiceCall
             var payloadStr = Encoding.UTF8.GetString(payloadBytesDecoded, 0, payloadBytesDecoded.Length);
             var payload = JsonConvert.DeserializeAnonymousType(payloadStr, new { Exp = 0UL });
 
-            _logger.Debug("Valid: the token is valid until {0}.", new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(payload.Exp));
+            _logger.Debug("Expired: the token is valid until {0}.", new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(payload.Exp));
 
             //=> Comparing the exp timestamp to the current timestamp
             var currentTimestamp = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
 
             var result = currentTimestamp + 10 > payload.Exp; // 10 sec is just a margin
-            if (result) _logger.Debug("Valid: token expired.");
-            else _logger.Debug("Valid: token still valid.");
+            if (result) _logger.Info("Expired: token expired.");
+            else _logger.Info("Expired: token still valid.");
             return result;
         }
 
         private TokenResponse GetNewClientToken(string scope)
         {
             var tokenUrl = string.Format("{0}connect/token", Helpers.Appsettings.AuthUrl());
-            _logger.Debug("Getting a silicon client token at {0}", tokenUrl);
+            _logger.Info("Getting a silicon client token at {0}", tokenUrl);
             var client = new TokenClient(tokenUrl, Helpers.Appsettings.SiliconClientId(), Helpers.Appsettings.SiliconClientSecret());
 
             var token = client.RequestClientCredentialsAsync(scope).Result;
             if (token.IsError) _logger.Error("Error getting Token for silicon Client: {0} ", token.Error);
-            else _logger.Debug("Token obtained");
 
             return token;
         }

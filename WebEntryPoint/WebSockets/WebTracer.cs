@@ -11,7 +11,7 @@ namespace WebEntryPoint.WebSockets
     {
         private SocketClient _socket = new SocketClient();
         private string _url;
-        static ILogger _logger = LogManager.CreateLogger(typeof(WebTracer));
+        static ILogger _logger = LogManager.CreateLogger(typeof(WebTracer), Helpers.Appsettings.LogLevel());
 
         public WebTracer(string serverUrl)
         {
@@ -37,7 +37,7 @@ namespace WebEntryPoint.WebSockets
             }
             catch (Exception ex)
             {
-                _logger.Error("Error sending msg '{2}' to socket on server {0}. Msg: {1}", _url, ex.Message, msg);
+                _logger.Error("Error when sending msg '{2}' to socket on server {0}. Msg: {1}", _url, ex.Message, msg);
             }
         }
     }

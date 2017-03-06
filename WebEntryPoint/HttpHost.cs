@@ -10,12 +10,10 @@ namespace WebEntryPoint
     {
         // This code configures Web API. The Startup class is specified as a type
         // parameter in the WebApp.Start method.
-        private ILogger _logger = LogManager.CreateLogger(typeof(HttpHost));
+        private ILogger _logger = LogManager.CreateLogger(typeof(HttpHost), Helpers.Appsettings.LogLevel());
 
         public void Configuration(IAppBuilder appBuilder)
         {
-            _logger.Info("Configuring to accept access tokens from identityserver and require a scope of 'EntryQueueApi'..");
-
             appBuilder.UseIdentityServerBearerTokenAuthentication(new IdentityServerBearerTokenAuthenticationOptions
             {
                 Authority = Helpers.Appsettings.AuthUrl(),
@@ -42,6 +40,7 @@ namespace WebEntryPoint
             //config.Filters.Add(new AuthorizeAttribute());
 
             appBuilder.UseWebApi(config);
+            _logger.Info("startup executed");
         }
     }
 }
