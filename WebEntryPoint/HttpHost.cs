@@ -3,6 +3,7 @@ using System.Web.Http;
 using NLogWrapper;
 using IdentityServer3.AccessTokenValidation;
 using System.Security.Cryptography.X509Certificates;
+using System.Web.Http.Cors;
 
 namespace WebEntryPoint
 {
@@ -23,7 +24,8 @@ namespace WebEntryPoint
 
             // Configure Web API for self-host. 
             HttpConfiguration config = new HttpConfiguration();
-            config.EnableCors();
+            var corsAttr = new EnableCorsAttribute("http://local.frontend,https://local.frontend", "*", "*");
+            config.EnableCors(corsAttr);
 
             config.MapHttpAttributeRoutes(); //in case you use [] routes
             config.Routes.MapHttpRoute(
@@ -34,7 +36,7 @@ namespace WebEntryPoint
             
             // wire up logging
             config.MessageHandlers.Add(new LogRequestMessageHandler());
-            
+
             // require authentication for all controllers 
             //NOTNOW
             //config.Filters.Add(new AuthorizeAttribute());

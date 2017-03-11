@@ -21,7 +21,9 @@ namespace WebEntryPoint.MQ
 {
     public class QueueManager2
     {
-        //public delegate void MessageReceivedEventHandler(object sender, MessageEventArgs args);
+        private enum ExeModus { Sequential, Paralell };
+        private ExeModus _exeModus = ExeModus.Sequential;
+
         private bool _initialized;
 
         private MSMQWrapper _entryQ;
@@ -29,7 +31,9 @@ namespace WebEntryPoint.MQ
         private MSMQWrapper _service1Q;
         private MSMQWrapper _service2Q;
         private MSMQWrapper _service3Q;
-
+        private MSMQWrapper _cmdQ;
+        private MSMQWrapper _cmdReplyQ;
+        
         private Dictionary<ProcessPhase, WebService> _serviceMap;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
         private WebTracer _webTracer;
@@ -57,14 +61,14 @@ namespace WebEntryPoint.MQ
         public int AddCount { get; private set; }
         object _processed = new object();
 
-        public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q)
+        public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q)
         {
             ProcessedList = new List<string>();
             _serviceMap = new Dictionary<ProcessPhase, WebService>();
             _webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
             _tokenManager = new TokenManager();
 
-            Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q);
+            Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q);
         }
 
         public void ResetCounters()
@@ -80,24 +84,30 @@ namespace WebEntryPoint.MQ
 
         public delegate void EventHandlerWithQueue(object sender, ReceiveCompletedEventArgs e, MSMQWrapper queue);
 
-        public string Init(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q)
+        public string Init(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q)
         {
             if (_initialized)
             {
                 return "Already initialized, call stop";
             }
-            CheckQueuePaths(entry_Q, service1_Q, service2_Q, service3_Q,exit_Q);
+            CheckQueuePaths(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q);
 
             try
             {
                 ProcessMsgPerMsg = true;
                 UseTimedRetry = false;
 
+                _cmdQ = new MSMQWrapper(cmd_Q);
+                //_cmdReplyQ = new MSMQWrapper("");
+
                 _entryQ = new MSMQWrapper(entry_Q);
                 _service1Q = new MSMQWrapper(service1_Q);
                 _service2Q = new MSMQWrapper(service2_Q);
                 _service3Q = new MSMQWrapper(service3_Q);
                 _exitQ = new MSMQWrapper(exit_Q);
+
+                _cmdQ.SetFormatters(typeof(DataBag), typeof(string));
+                _cmdQ.AddHandler(QueueCmdHandler);
 
                 _entryQ.SetFormatters(typeof(DataBag), typeof(string));
                 _entryQ.AddHandler(EntryHandler);
@@ -135,7 +145,7 @@ namespace WebEntryPoint.MQ
 
         }
 
-        private void CheckQueuePaths(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q)
+        private void CheckQueuePaths(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q)
         {
             // The choice is not to auto-create queues
 
@@ -145,6 +155,7 @@ namespace WebEntryPoint.MQ
             if (!MessageQueue.Exists(service2_Q)) nonexist += ("'" + service2_Q);
             if (!MessageQueue.Exists(service3_Q)) nonexist += ("'" + service3_Q);
             if (!MessageQueue.Exists(exit_Q)) nonexist += ("'" + exit_Q);
+            if (!MessageQueue.Exists(cmd_Q)) nonexist += ("'" + cmd_Q);
 
             if (nonexist != string.Empty)
             {
@@ -159,6 +170,7 @@ namespace WebEntryPoint.MQ
         {
             if (!_initialized) throw new Exception("Queuemanager not initialized.");
 
+            _cmdQ.BeginReceive();
             _entryQ.BeginReceive();
             _service1Q.BeginReceive();
             _service2Q.BeginReceive();
@@ -167,6 +179,31 @@ namespace WebEntryPoint.MQ
 
             _logger.Info("Queue manager listening on queues {0}, {1}, {2}, {3}, {4}", 
                 _entryQ.Q.FormatName, _service1Q.Q.FormatName, _service2Q.Q.FormatName, _service3Q.Q.FormatName, _exitQ.Q.FormatName);
+        }
+
+        public string ToggleModus()
+        {
+            _exeModus = RunsParalell() ? ExeModus.Sequential : ExeModus.Paralell;
+            return _exeModus.ToString();
+        }
+        private bool RunsParalell()
+        {
+            return _exeModus == ExeModus.Paralell;
+        }
+
+        private void QueueCmdHandler(object sender, ReceiveCompletedEventArgs e)
+        {
+            System.Messaging.Message msg = _cmdQ.Q.EndReceive(e.AsyncResult);
+            DataBag msgObj = msg.Body as DataBag;
+
+            msgObj.Content = ToggleModus();
+            _webTracer.Send(msgObj.socketToken, "Execution modus toggled to {0}", _exeModus);
+            _logger.Debug("Execution modus toggled to {0}", _exeModus);
+            // figure out how to get the value to the controller, the Queue is unlikely to work
+             _cmdQ.Send(msg);
+            Task.Delay(100).Wait();
+
+            _cmdQ.BeginReceive();
         }
 
         private void EntryHandler(object sender, ReceiveCompletedEventArgs e)
@@ -188,10 +225,14 @@ namespace WebEntryPoint.MQ
             // we could also cast the sender to a msmq, but not to MSMQWrapper, so we use EndReceive
             System.Messaging.Message msg = queue.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
-            _webTracer.Send(msgObj.socketToken, "Geneneric Handler received '{0}' from queue '{1}'", msgObj.MessageId, queue.Name);
+            _webTracer.Send(msgObj.socketToken, "Generic Handler received '{0}' from queue '{1}'", msgObj.MessageId, queue.Name);
+
+            bool paralell = RunsParalell(); // make the choice thread safe
+            if (paralell) queue.BeginReceive();
 
             await ProcessMessageAsync(msg);
-            queue.BeginReceive();
+
+            if (!paralell) queue.BeginReceive();
         }
 
         private void ExitHandler(object sender, ReceiveCompletedEventArgs e)
@@ -256,6 +297,7 @@ namespace WebEntryPoint.MQ
 
             ResetCounters();
 
+            _cmdQ.RemoveHandler(QueueCmdHandler);
             _entryQ.RemoveHandler(EntryHandler);
             _service1Q.RemoveHandler(GenericHandler);
             _service2Q.RemoveHandler(GenericHandler);
@@ -345,15 +387,17 @@ namespace WebEntryPoint.MQ
             {
                 MessageId = databag.MessageId;
                 Content = databag.Content;
-                Started = databag.Started;
-                Duration = (DateTime.Now - databag.Started).TotalSeconds.ToString();
+                Start = databag.Started;
+                End = DateTime.Now;
+                Duration = (decimal)(DateTime.Now - databag.Started).TotalSeconds;
                 UserName = databag.UserName;
             }
             public string MessageId { get; set; }
             public string UserName { get; set; }
-            public DateTime Started { get; set; }
+            public DateTime Start { get; set; }
+            public DateTime End { get; set; }
 
-            public string Duration { get; set; }
+            public decimal Duration { get; set; }
             public string Content { get; set; }
 
         }

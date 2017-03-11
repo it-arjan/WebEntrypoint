@@ -19,10 +19,13 @@ using Newtonsoft.Json;
 
 namespace WebEntryPoint
 {
-    [Authorize]
+    //[Authorize]
     public class EntryQueueController: ApiController
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.Appsettings.LogLevel());
+        private string _ToggleResult = string.Empty;
+        MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
+
         //[EnableCors(origins: "http://local.frontend,https://local.frontend,http://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com,https://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com", headers: "*", methods: "*")]
         public IHttpActionResult Get()
         {
@@ -56,7 +59,44 @@ namespace WebEntryPoint
                 });
             }
         }
+        private void QueueCmdHandler(object sender, ReceiveCompletedEventArgs e)
+        {
+            System.Messaging.Message msg = _cmdQueue.Q.EndReceive(e.AsyncResult);
+            DataBag dataBag = msg.Body as DataBag;
+            _ToggleResult = dataBag.Content;
+        }
 
+        //[HttpPost]
+        //[Route("cmd/toggle")]
+        //[EnableCors(origins: "http://local.frontend,https://local.frontend", headers: "*", methods: "*")]
+        public IHttpActionResult Options()
+        {
+            return Json(new { message = "" });
+        }
+
+        public IHttpActionResult Put(PostData received)
+        {
+            _logger.Debug("Toggled .. sending the msg..");
+            var dataBag = new DataBag();
+            dataBag.socketToken = received.SocketToken;
+
+            var msg = new System.Messaging.Message();
+            msg.Body = dataBag;
+
+            _cmdQueue.SetFormatters(typeof(DataBag));
+            _cmdQueue.AddHandler(QueueCmdHandler);
+
+            _cmdQueue.Send(msg, dataBag.Label);
+            // todo listen on another queue
+            _logger.Debug("Waiting for toggle result");
+            var result = _cmdQueue.Q.BeginReceive();
+
+            while (string.IsNullOrEmpty(_ToggleResult)) Task.Delay(100).Wait();
+            _logger.Debug("Toggle result received {0}", _ToggleResult);
+
+            return Json(new { message = _ToggleResult });
+        }
+        
         public IHttpActionResult Post(PostData received)
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));

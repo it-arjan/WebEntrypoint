@@ -16,7 +16,7 @@ namespace WebEntryPoint.Helpers
         public const string PortKey = "port";
         public const string AuthServerKey = "authserver";
 
-        public const string SocketListenersKey = "websocket.listeners.csv";
+        public const string AllowedSocketListenerCsvKey = "websocket.listeners.csv";
         public const string SocketPortKey = "websocket.port";
         public const string SocketSchemeKey = "websocket.scheme";
 
@@ -25,6 +25,8 @@ namespace WebEntryPoint.Helpers
         public const string Service2QueueKey = "service2Queue";
         public const string Service3QueueKey = "service3Queue";
         public const string ExitQueueKey = "exitQueue";
+        public const string CmdQueueKey = "commandQueue";
+
         public const string LogLevelKey = "log.level";
 
         public static bool Ssl()
@@ -73,9 +75,9 @@ namespace WebEntryPoint.Helpers
             return ConfigurationManager.AppSettings.Get(AuthServerKey);
         }
 
-        public static string SocketServerListenUrls()
+        public static string AllowedSocketListenerCsv()
         {
-            return ConfigurationManager.AppSettings.Get(SocketListenersKey);
+            return ConfigurationManager.AppSettings.Get(AllowedSocketListenerCsvKey);
         }
 
         public static string LogLevel()
@@ -113,5 +115,10 @@ namespace WebEntryPoint.Helpers
         {
             return ConfigurationManager.AppSettings.Get(ExitQueueKey);
         }
+        public static string CmdQueue()
+        {
+            return ConfigurationManager.AppSettings.Get(CmdQueueKey);
+        }
+        
     }
 }
