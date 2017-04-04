@@ -9,21 +9,44 @@ namespace WebEntryPoint.ServiceCall
 {
     public abstract class WebService
     {
-        public WebService(string name, int max)
+        private object _lockActiveCalls= new object();
+        public int MaxRetries { get; protected set; }
+        public int ServiceLoad { get; set; }
+        public int MaxLoad { get; protected set; }
+        public string Url { get; private set; }
+
+        public WebService(string name, string url, int maxLoad=3, int maxRetries =3)
         {
+            Url = url;
             Name = name;
-            maxConcurrrentRequests = max;
+            MaxLoad = maxLoad;
+            MaxRetries = maxRetries;
         }
-        protected MSMQWrapper _myQueue;
-        protected MSMQWrapper _nextQueue;
-        public int activeCalls { get; set; }
-        private int maxConcurrrentRequests;
+
+        private void ChangeActiveCalls(int nr)
+        {
+            lock (_lockActiveCalls)
+            {
+                ServiceLoad += nr;
+            }
+        }
+
+        protected void IncreaseServiceLoadSafe()
+        {
+            ChangeActiveCalls(1);
+        }
+        protected void DecreaseServiceLoadSafe()
+        {
+            ChangeActiveCalls(-1);
+        }
 
         public bool MaxLoadReached()
         {
-            return activeCalls < maxConcurrrentRequests;
+            return ServiceLoad > MaxLoad;
         }
+
         public string Name { get; set; }
         public abstract Task<DataBag> Call(DataBag data);
+        public abstract string Description();
     }
 }

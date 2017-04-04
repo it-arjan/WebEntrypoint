@@ -17,6 +17,8 @@ using Newtonsoft.Json;
 using System.Net.Http;
 using IdentityModel.Client;
 using WebEntryPoint.ServiceCall;
+using WebEntryPoint.Helpers;
+
 namespace WebEntryPoint.MQ
 {
     public class QueueManager2
@@ -77,7 +79,7 @@ namespace WebEntryPoint.MQ
             {
                 DoneCount = 0;
                 AddCount = 0;
-                _BatchTicker.Reset();
+                //_BatchTicker.Reset();
                 ProcessedList.Clear();
             }
         }
@@ -123,12 +125,10 @@ namespace WebEntryPoint.MQ
 
                 _exitQ.SetFormatters(typeof(DataBag), typeof(string));
                 _exitQ.AddHandler(ExitHandler);
-
-                // adding service mapping
-                _serviceMap.Add(ProcessPhase.Service1, Factory.Create(ProcessPhase.Service1));
-                _serviceMap.Add(ProcessPhase.Service2, Factory.Create(ProcessPhase.Service2));
-                _serviceMap.Add(ProcessPhase.Service3, Factory.Create(ProcessPhase.Service3));
-                _serviceMap.Add(ProcessPhase.Completed, Factory.Create(ProcessPhase.Completed));
+                
+                _serviceMap.Add(ProcessPhase.Service1, Factory.Create(ProcessPhase.Service1, _tokenManager));
+                _serviceMap.Add(ProcessPhase.Service2, Factory.Create(ProcessPhase.Service2, _tokenManager));
+                _serviceMap.Add(ProcessPhase.Service3, Factory.Create(ProcessPhase.Service3, _tokenManager));
 
                 _initialized = true;
             }
@@ -199,9 +199,9 @@ namespace WebEntryPoint.MQ
             msgObj.Content = ToggleModus();
             _webTracer.Send(msgObj.socketToken, "Execution modus toggled to {0}", _exeModus);
             _logger.Debug("Execution modus toggled to {0}", _exeModus);
-            // figure out how to get the value to the controller, the Queue is unlikely to work
+
              _cmdQ.Send(msg);
-            Task.Delay(100).Wait();
+            Task.Delay(20).Wait();
 
             _cmdQ.BeginReceive();
         }
@@ -210,9 +210,15 @@ namespace WebEntryPoint.MQ
         {
             System.Messaging.Message msg = _entryQ.Q.EndReceive(e.AsyncResult);
             DataBag msgObj = msg.Body as DataBag;
-
-            if (!_BatchTicker.IsRunning) _BatchTicker.Start();
-            AddCount++;
+            _logger.Debug("EntryHandler: picking up {0}", msgObj.MessageId);
+            msgObj.AddToContent("Service log for {0}", msgObj.MessageId);
+            foreach (var key in _serviceMap.Keys)
+            {
+                msgObj.AddToContent("{0}: {1}, {2}", key, _serviceMap[key].Name, _serviceMap[key].Description());
+            }
+            msgObj.AddSeparatorToContent();
+            //if (!_BatchTicker.IsRunning) _BatchTicker.Start();
+            //AddCount++;
 
             _service1Q.Send(msg);
             _webTracer.Send(msgObj.socketToken, "EntryHandler: Dropped {0} in the Q for service1", msgObj.MessageId);
@@ -224,10 +230,16 @@ namespace WebEntryPoint.MQ
         {
             // we could also cast the sender to a msmq, but not to MSMQWrapper, so we use EndReceive
             System.Messaging.Message msg = queue.Q.EndReceive(e.AsyncResult);
-            DataBag msgObj = msg.Body as DataBag;
-            _webTracer.Send(msgObj.socketToken, "Generic Handler received '{0}' from queue '{1}'", msgObj.MessageId, queue.Name);
+            DataBag datBag = msg.Body as DataBag;
 
-            bool paralell = RunsParalell(); // make the choice thread safe
+            string logMsg = string.Format("Generic Handler received '{0}' from queue '{1}'", datBag.MessageId, queue.Name);
+            _logger.Debug(logMsg);
+            _webTracer.Send(datBag.socketToken, logMsg);
+
+            string LogMsg = string.Empty;
+            bool paralell = DetermineActualProcessingMode(datBag, out LogMsg);
+            datBag.AddToContent(LogMsg);
+
             if (paralell) queue.BeginReceive();
 
             await ProcessMessageAsync(msg);
@@ -235,6 +247,20 @@ namespace WebEntryPoint.MQ
             if (!paralell) queue.BeginReceive();
         }
 
+        private bool DetermineActualProcessingMode(DataBag dataBag, out string msg)
+        {
+            var maxLoadReached = _serviceMap[dataBag.CurrentPhase].MaxLoadReached();
+            var serviceLoad = _serviceMap[dataBag.CurrentPhase].ServiceLoad;
+
+            var paralell = RunsParalell();
+            var result = maxLoadReached ? false : paralell;
+
+            msg = dataBag.CurrentPhase.ToString();
+            if (maxLoadReached && paralell) msg += string.Format(" :Load ({0}) for service currently exceeds its max, processing this call sequential to reduce the service load", serviceLoad);
+            else msg += string.Format(" Actual processing mode: {1}", serviceLoad, paralell ? ExeModus.Paralell : ExeModus.Sequential);
+            
+            return result;
+        }
         private void ExitHandler(object sender, ReceiveCompletedEventArgs e)
         {
 
@@ -244,25 +270,14 @@ namespace WebEntryPoint.MQ
             _webTracer.Send(msgObj.socketToken,
                 "Received '{0}' as completed, posting it back..", msgObj.MessageId);
 
-            var status = PostBackUsingEasyHttp(_tokenManager.GetToken(Helpers.IdSrv3.ScopeMvcFrontEnd), msgObj.PostBackUrl, new PostbackData(msgObj));
+            var postbackService = new PostBackService(msgObj.PostBackUrl, _tokenManager, Helpers.IdSrv3.ScopeMvcFrontEnd);
+            var status = postbackService.CallSync(msgObj); // #TODO call Async
             _webTracer.Send(msgObj.socketToken, "Postback returned {0}", status);
             if (status == HttpStatusCode.OK) _webTracer.Send(msgObj.socketToken, msgObj.doneToken);
             _exitQ.BeginReceive();
         }
 
-        private HttpStatusCode PostBackUsingEasyHttp(string token, string postbackUrl, PostbackData data)
-        {
-            _logger.Info("Postback url='{0}'", postbackUrl);
-            _logger.Debug("post back values: {0}", JsonConvert.SerializeObject(data));
-            var eHttp = new EasyHttp.Http.HttpClient();
-            var auth_header = string.Format("Bearer {0}", token);
 
-            eHttp.Request.AddExtraHeader("Authorization", auth_header);
-            var result= eHttp.Post(postbackUrl, data, HttpContentTypes.ApplicationJson).StatusCode;
-            _logger.Info("Postback returned '{0}': (1)", result);
-
-            return result;
-        }
 
         //private async Task PostBackUsingHttpClient(DataBag msgObj)
         //{
@@ -333,12 +348,19 @@ namespace WebEntryPoint.MQ
                 _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", dataBag.CurrentPhase, dataBag.MessageId);
 
                 var service = _serviceMap[dataBag.CurrentPhase];
+
                 dataBag.TryCount++;
                 dataBag = await service.Call(dataBag);
 
-                msg.Body = dataBag;
+                msg.Body = dataBag; // #TODO check if this re-assignement is needed
+                if (dataBag.Retry && dataBag.TryCount >= service.MaxRetries)
+                {
+                    dataBag.Status = HttpStatusCode.ServiceUnavailable; 
+                    dataBag.AddToContent("{0} failed too many times, max-retries={1}. Skipping...", service.Url, service.MaxRetries);
+                }
+                dataBag.AddSeparatorToContent();
 
-                if (dataBag.Error)
+                if (dataBag.Retry)
                 {
                     int delay = 1;
                     _webTracer.Send(dataBag.socketToken, "Call to {1} (={2}) failed for {0}, Retry in {3} secs", dataBag.MessageId, dataBag.CurrentPhase, service.Name, delay);
@@ -350,7 +372,7 @@ namespace WebEntryPoint.MQ
                     var oldPhase = dataBag.CurrentPhase;
                     dataBag.NextService();
                     dataBag.TryCount = 0;
-                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={3}) succeeded, dropping {0} in the MSMQ for {2}", dataBag.MessageId, oldPhase, dataBag.CurrentPhase, service.Name);
+                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={3}) succeeded, dropping {0} in the MQ for {2}", dataBag.MessageId, oldPhase, dataBag.CurrentPhase, service.Name);
                     GetQueue(dataBag.CurrentPhase).Send(msg, dataBag.Label);
                 }
             }
@@ -381,26 +403,7 @@ namespace WebEntryPoint.MQ
             GetQueue(msgObj.CurrentPhase).Send(msg, msgObj.Label);
         }
 
-        public class PostbackData
-        {
-            public PostbackData(DataBag databag)
-            {
-                MessageId = databag.MessageId;
-                Content = databag.Content;
-                Start = databag.Started;
-                End = DateTime.Now;
-                Duration = (decimal)(DateTime.Now - databag.Started).TotalSeconds;
-                UserName = databag.UserName;
-            }
-            public string MessageId { get; set; }
-            public string UserName { get; set; }
-            public DateTime Start { get; set; }
-            public DateTime End { get; set; }
 
-            public decimal Duration { get; set; }
-            public string Content { get; set; }
-
-        }
     }
 
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Configuration;
+using WebEntryPoint.ServiceCall;
 
 namespace WebEntryPoint.Helpers
 {
@@ -27,6 +28,8 @@ namespace WebEntryPoint.Helpers
         public const string ExitQueueKey = "exitQueue";
         public const string CmdQueueKey = "commandQueue";
 
+        public const string serviceXHostnameKey = "service@-@.hostname.fullpath";
+        public const string serviceXScopeKey = "service@-@.auth.scope";
         public const string LogLevelKey = "log.level";
 
         public static bool Ssl()
@@ -119,6 +122,33 @@ namespace WebEntryPoint.Helpers
         {
             return ConfigurationManager.AppSettings.Get(CmdQueueKey);
         }
-        
+        public static string GetSettingKey(ProcessPhase phase, string replaceKey)
+        {
+            return replaceKey.Replace("@-@", processPhaseToIntString(phase));
+        }
+        public static string ServiceX_Url(ProcessPhase phase)
+        {
+            var settingKey = GetSettingKey(phase, serviceXHostnameKey);
+            var setting = ConfigurationManager.AppSettings.Get(settingKey);
+
+            return setting.ToLower() != "fake" ? string.Format("{0}://{1}/", Scheme(), setting): "fake";
+        }
+        public static string ServiceX_Scope(ProcessPhase phase)
+        {
+            var settingKey = GetSettingKey(phase, serviceXScopeKey);
+            var setting = ConfigurationManager.AppSettings.Get(settingKey);
+
+            return setting;
+        }
+        private static string processPhaseToIntString(ProcessPhase phase)
+        {
+            switch (phase)
+            {
+                case ProcessPhase.Service1: return "1";
+                case ProcessPhase.Service2: return "2";
+                case ProcessPhase.Service3: return "3";
+                default: return "0";
+            }
+        }
     }
 }

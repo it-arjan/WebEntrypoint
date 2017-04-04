@@ -23,22 +23,22 @@ namespace WebEntryPoint.ServiceCall
             lock (changeToken)
             {
                 var token = _tokenMap.ContainsKey(scope) ? _tokenMap[scope] : null;
-                if (token != null && !Expired(token))
+                if (token != null && !Expired(token, scope))
                 {
                     _logger.Debug("GetToken: re-using existing token");
                 }
                 else
                 {
-                    _logger.Debug("GetToken: getting a new token");
+                    _logger.Debug("GetToken: getting a new token for scope {0}", scope);
                     _tokenMap[scope] = GetNewClientToken(scope).AccessToken;
                 }
             }
             return _tokenMap[scope];
         }
 
-        private bool Expired(string jwt)
+        private bool Expired(string jwt, string scope)
         {
-            _logger.Debug("Expired: Checking expiration of token {0}", jwt);
+            _logger.Debug("Checking expiration of token({1}) {0}", jwt, scope);
             // #PastedCode
             //
             //=> Retrieve the 2nd part of the JWT token (this the JWT payload)
@@ -55,14 +55,15 @@ namespace WebEntryPoint.ServiceCall
             var payloadStr = Encoding.UTF8.GetString(payloadBytesDecoded, 0, payloadBytesDecoded.Length);
             var payload = JsonConvert.DeserializeAnonymousType(payloadStr, new { Exp = 0UL });
 
-            _logger.Debug("Expired: the token is valid until {0}.", new DateTime(1970, 1, 1, 0, 0, 0).AddSeconds(payload.Exp));
+            var dd1970CET = new DateTime(1970, 1, 1, 0, 0, 0).AddHours(1);
+            _logger.Debug("Expired Check: the token({1}) is valid until {0}.", dd1970CET.AddSeconds(payload.Exp), scope);
 
             //=> Comparing the exp timestamp to the current timestamp
-            var currentTimestamp = (ulong)(DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0)).TotalSeconds;
+            var currentTimestamp = (ulong)(DateTime.UtcNow.AddHours(1) - dd1970CET).TotalSeconds;
 
             var result = currentTimestamp + 10 > payload.Exp; // 10 sec is just a margin
-            if (result) _logger.Info("Expired: token expired.");
-            else _logger.Info("Expired: token still valid.");
+            if (result) _logger.Info("Expired Check: token({0}) expired.", scope);
+            else _logger.Info("Expired Check: token({0}) still valid.", scope);
             return result;
         }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -22,7 +23,7 @@ namespace WebEntryPoint.ServiceCall
         {
 
             TryCount = 0;
-            Status = ProcessStatus.ReadyFor;
+            Status = HttpStatusCode.OK;
             CurrentPhase = ProcessPhase.Service1;
         }
 
@@ -38,36 +39,47 @@ namespace WebEntryPoint.ServiceCall
         public string UserName { get; set; }
 
         public string SiliconToken { get; set; }
-        public ProcessStatus Status { get; set; }
+
+        public HttpStatusCode Status { get; set; }
+
         public ProcessPhase CurrentPhase { get; set; }
 
-        public bool Error { get { return Status.Equals(ProcessStatus.ServiceFailed); } }
+        public bool Retry {
+            get { return !Status.Equals(HttpStatusCode.OK) 
+                    && !Status.Equals(HttpStatusCode.ServiceUnavailable)
+                    && !Status.Equals(HttpStatusCode.NotFound);
+            }
+        }
 
         public void AddToContent(string msg, params object[] args)
         {
             Content += "\n";
-            Content += string.Format(msg, args);
+            if (msg != null) Content += string.Format(msg, args);
+            else Content += "AddToContent: attempting to add a NULL msg ...";
         }
-
+        public void AddSeparatorToContent()
+        {
+            AddToContent("-----");
+        }
         public void NextService()
         {
             switch (CurrentPhase)
             {
                 case ProcessPhase.Entry:
                     CurrentPhase = ProcessPhase.Service1;
-                    Status = ProcessStatus.ReadyFor;
+                    Status = HttpStatusCode.OK;
                     break;
                 case ProcessPhase.Service1:
                     CurrentPhase = ProcessPhase.Service2;
-                    Status = ProcessStatus.ReadyFor;
+                    Status = HttpStatusCode.OK;
                     break;
                 case ProcessPhase.Service2:
                     CurrentPhase = ProcessPhase.Service3;
-                    Status = ProcessStatus.ReadyFor;
+                    Status = HttpStatusCode.OK;
                     break;
                 case ProcessPhase.Service3:
                     CurrentPhase = ProcessPhase.Completed;
-                    Status = ProcessStatus.ServiceSuccess;
+                    Status = HttpStatusCode.OK;
                     break;
                 default:
                     throw new Exception("Impossible Current phase -> " + CurrentPhase);

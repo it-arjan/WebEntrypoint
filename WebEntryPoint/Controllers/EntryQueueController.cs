@@ -19,14 +19,13 @@ using Newtonsoft.Json;
 
 namespace WebEntryPoint
 {
-    //[Authorize]
+    
     public class EntryQueueController: ApiController
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.Appsettings.LogLevel());
         private string _ToggleResult = string.Empty;
         MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
 
-        //[EnableCors(origins: "http://local.frontend,https://local.frontend,http://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com,https://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com", headers: "*", methods: "*")]
         public IHttpActionResult Get()
         {
             var caller = User as ClaimsPrincipal;
@@ -66,17 +65,17 @@ namespace WebEntryPoint
             _ToggleResult = dataBag.Content;
         }
 
-        //[HttpPost]
-        //[Route("cmd/toggle")]
-        //[EnableCors(origins: "http://local.frontend,https://local.frontend", headers: "*", methods: "*")]
+        // COSR is enabled in  HttpHost
         public IHttpActionResult Options()
         {
             return Json(new { message = "" });
         }
-
-        public IHttpActionResult Put(PostData received)
+        [Authorize]
+        [HttpPost]
+        public IHttpActionResult Toggle(PostData received)
         {
-            _logger.Debug("Toggled .. sending the msg..");
+            _logger.Debug("Toggled, data ={0}\n .. sending the msg..");
+            _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             var dataBag = new DataBag();
             dataBag.socketToken = received.SocketToken;
 
@@ -96,8 +95,9 @@ namespace WebEntryPoint
 
             return Json(new { message = _ToggleResult });
         }
-        
-        public IHttpActionResult Post(PostData received)
+        [Authorize]
+        [HttpPost]
+        public IHttpActionResult Drop(PostData received)
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
 
@@ -124,17 +124,13 @@ namespace WebEntryPoint
             entryQueue.SetFormatters(typeof(DataBag));
             entryQueue.Send(msg, dataBag.Label);
 
-            webTracer.Send(received.SocketToken, "WebApi: dropped '{0}' into the queue.", received.MessageId);
-            string resultMsg = string.Format("WebApi: '{0}' is inserted into entryQueue.", received.MessageId);
+            string resultMsg = string.Format("WebApi: Dropped '{0}' in the entryQueue.", received.MessageId);
+            webTracer.Send(received.SocketToken, resultMsg);
 
             return Json(new { message = resultMsg });
         }
 
-        private string GetOauthToken()
-        {
-            return Request.Headers.Authorization.Parameter;
-        }
-
+        [Authorize]
         public class PostData
         {
             public string MessageId { get; set; }

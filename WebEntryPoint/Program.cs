@@ -28,16 +28,8 @@ namespace WebEntryPoint
         private static void LogException(object sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e)
         {
             Exception ex = e.Exception;
-            var stacktrace = ex.StackTrace;
-            var site = ex.TargetSite;
-            string msg = ex.Message;
-            while (ex.InnerException != null)
-            {
-                msg = string.Format("{0}\n{1}", msg, ex.InnerException.Message);
-                ex = ex.InnerException;
-                stacktrace += ex.StackTrace;
-            }
-            _logger.Error("FirstChanceException event raised in {0}: {1}\n site: {2}\n Stack: {3}", AppDomain.CurrentDomain.FriendlyName, msg, site, stacktrace);
+
+            _logger.Error("FirstChanceException event raised in {0}: \n \t\t{1}", AppDomain.CurrentDomain.FriendlyName, ex.ToString());
         }
     }
 }

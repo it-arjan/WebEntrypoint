@@ -26,7 +26,7 @@ namespace WebEntryPoint
                 }
                 var referrer = request.GetOwinContext().Request.RemoteIpAddress;
                 referrer = referrer ?? "unknown";
-                _logger.Info("incoming request for {0} by user {1}. Referrer: {2}", request.RequestUri, userName, referrer);
+                _logger.Info("incoming {3}-request for {0} by user {1}. Referrer: {2}", request.RequestUri, userName, referrer, request.Method);
             }
             catch (Exception ex)
             {

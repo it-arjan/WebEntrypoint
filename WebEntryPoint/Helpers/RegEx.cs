@@ -7,6 +7,6 @@ namespace WebEntryPoint.Helpers
 {
     public static class RegEx
     {
-        public const string InvalidMessageIdChars = "[^0-9a-zA-Z-_]+";
+        public const string InvalidMessageIdChars = "[^0-9a-zA-Z-_ ]+";
     }
 }
