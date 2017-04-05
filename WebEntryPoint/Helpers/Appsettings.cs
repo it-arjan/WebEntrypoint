@@ -8,6 +8,10 @@ using WebEntryPoint.ServiceCall;
 
 namespace WebEntryPoint.Helpers
 {
+    public enum QServiceConfig
+    {
+        None = 0, Service1, Service2, Service3, Service4, Service5, Service6, Service7, Enum_End
+    }
     static class Appsettings
     {
         public const string SiliconClientIdKey = "SiliconClientId";
@@ -118,37 +122,31 @@ namespace WebEntryPoint.Helpers
         {
             return ConfigurationManager.AppSettings.Get(ExitQueueKey);
         }
+
         public static string CmdQueue()
         {
             return ConfigurationManager.AppSettings.Get(CmdQueueKey);
         }
-        public static string GetSettingKey(ProcessPhase phase, string replaceKey)
+
+        public static string ReplaceInSettingKey(QServiceConfig phase, string replaceKey)
         {
-            return replaceKey.Replace("@-@", processPhaseToIntString(phase));
+            return replaceKey.Replace("@-@", ((int)phase).ToString());
         }
-        public static string ServiceX_Url(ProcessPhase phase)
+
+        public static string ServiceX_Url(QServiceConfig phase)
         {
-            var settingKey = GetSettingKey(phase, serviceXHostnameKey);
+            var settingKey = ReplaceInSettingKey(phase, serviceXHostnameKey);
             var setting = ConfigurationManager.AppSettings.Get(settingKey);
 
             return setting.ToLower() != "fake" ? string.Format("{0}://{1}/", Scheme(), setting): "fake";
         }
-        public static string ServiceX_Scope(ProcessPhase phase)
+
+        public static string ServiceX_Scope(QServiceConfig phase)
         {
-            var settingKey = GetSettingKey(phase, serviceXScopeKey);
+            var settingKey = ReplaceInSettingKey(phase, serviceXScopeKey);
             var setting = ConfigurationManager.AppSettings.Get(settingKey);
 
             return setting;
-        }
-        private static string processPhaseToIntString(ProcessPhase phase)
-        {
-            switch (phase)
-            {
-                case ProcessPhase.Service1: return "1";
-                case ProcessPhase.Service2: return "2";
-                case ProcessPhase.Service3: return "3";
-                default: return "0";
-            }
         }
     }
 }

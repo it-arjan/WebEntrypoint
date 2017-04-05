@@ -30,7 +30,7 @@ namespace WebEntryPoint
         private string _service3Queue;
         private string _exitQueue;
         private string _cmdQueue;
-        
+        private Thread qmThread;
         private WebSockets.SocketServer _socketServer;
 
         public EntrypointService()
@@ -73,16 +73,16 @@ namespace WebEntryPoint
 
             if (Appsettings.AllowedSocketListenerCsv() == null) throw new Exception("Websocket.Listeners not defined in app.config");
 
-            var phase = ServiceCall.ProcessPhase.Service1;
-            while (phase != ServiceCall.ProcessPhase.Completed)
+            var serviceNr = QServiceConfig.Service1;
+            while (serviceNr != QServiceConfig.Enum_End)
             {
-                var key = Appsettings.GetSettingKey(phase, Appsettings.serviceXHostnameKey);
+                var key = Appsettings.ReplaceInSettingKey(serviceNr, Appsettings.serviceXHostnameKey);
                 if (ConfigurationManager.AppSettings.Get(key) == null) throw new Exception("Key not present:" + key);
-                else _logger.Debug("{0} has url {1}", phase, Appsettings.ServiceX_Url(phase));
-                key = Appsettings.GetSettingKey(phase, Appsettings.serviceXScopeKey);
+                else _logger.Debug("{0} has url {1}", serviceNr, Appsettings.ServiceX_Url(serviceNr));
+                key = Appsettings.ReplaceInSettingKey(serviceNr, Appsettings.serviceXScopeKey);
                 if (ConfigurationManager.AppSettings.Get(key) == null) throw new Exception("Key not present:" + key);
-                else _logger.Debug("{0} has scope {1}", phase, Appsettings.ServiceX_Scope(phase));
-                phase++;
+                else _logger.Debug("{0} has scope {1}", serviceNr, Appsettings.ServiceX_Scope(serviceNr));
+                serviceNr++;
             }
 
             _logger.Info("config settings seem ok..");
@@ -90,11 +90,14 @@ namespace WebEntryPoint
             _logger.Info("Socket server Url = {0}", Appsettings.SocketServerUrl());
             _logger.Info("Auth server Url= {0}", Appsettings.AuthUrl());
 
-            _logger.Info("Configured Services:{0}, {1}, {2}", 
-                Appsettings.ServiceX_Url(ServiceCall.ProcessPhase.Service1),
-                Appsettings.ServiceX_Url(ServiceCall.ProcessPhase.Service2),
-                Appsettings.ServiceX_Url(ServiceCall.ProcessPhase.Service3)
-                );
+            _logger.Info("Configured Services:");
+            serviceNr = QServiceConfig.Service1;
+            while (serviceNr != QServiceConfig.Enum_End)
+            {
+                _logger.Info("========= Url: {0} Scope: {1}", Appsettings.ServiceX_Url(serviceNr), Appsettings.ServiceX_Scope(serviceNr));
+                serviceNr++;
+            }
+
             _logger.Debug("..done with config checks");
         }
 
@@ -112,8 +115,9 @@ namespace WebEntryPoint
 
             _logger.Info("Starting queuemanager..");
              queueManager = new QueueManager2(_entryQueue, _service1Queue, _service2Queue, _service3Queue, _exitQueue, _cmdQueue);
-            Thread t = new Thread(queueManager.StartListening);
-            t.Start();  
+            qmThread = new Thread(queueManager.StartListening);
+
+            qmThread.Start();  
             _logger.Info("Startup completed.");
 
         }

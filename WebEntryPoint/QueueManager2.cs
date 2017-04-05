@@ -21,6 +21,7 @@ using WebEntryPoint.Helpers;
 
 namespace WebEntryPoint.MQ
 {
+
     public class QueueManager2
     {
         private enum ExeModus { Sequential, Paralell };
@@ -34,9 +35,9 @@ namespace WebEntryPoint.MQ
         private MSMQWrapper _service2Q;
         private MSMQWrapper _service3Q;
         private MSMQWrapper _cmdQ;
-        private MSMQWrapper _cmdReplyQ;
         
-        private Dictionary<ProcessPhase, WebService> _serviceMap;
+        private Dictionary<QServiceConfig, WebService> _serviceMap;
+        private Dictionary<ProcessPhase, QServiceConfig> _activeServiceMapper;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
         private WebTracer _webTracer;
 
@@ -66,7 +67,8 @@ namespace WebEntryPoint.MQ
         public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q)
         {
             ProcessedList = new List<string>();
-            _serviceMap = new Dictionary<ProcessPhase, WebService>();
+            _serviceMap = new Dictionary<QServiceConfig, WebService>();
+            _activeServiceMapper = new Dictionary<ProcessPhase, QServiceConfig>();
             _webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
             _tokenManager = new TokenManager();
 
@@ -125,10 +127,16 @@ namespace WebEntryPoint.MQ
 
                 _exitQ.SetFormatters(typeof(DataBag), typeof(string));
                 _exitQ.AddHandler(ExitHandler);
-                
-                _serviceMap.Add(ProcessPhase.Service1, Factory.Create(ProcessPhase.Service1, _tokenManager));
-                _serviceMap.Add(ProcessPhase.Service2, Factory.Create(ProcessPhase.Service2, _tokenManager));
-                _serviceMap.Add(ProcessPhase.Service3, Factory.Create(ProcessPhase.Service3, _tokenManager));
+
+                var serviceNr = QServiceConfig.Service1;
+                while (serviceNr != QServiceConfig.Enum_End)
+                {
+                    _serviceMap.Add(serviceNr, Factory.Create(serviceNr, _tokenManager));
+                    serviceNr++;
+                }
+                _activeServiceMapper.Add(ProcessPhase.Service1, QServiceConfig.Service4);
+                _activeServiceMapper.Add(ProcessPhase.Service2, QServiceConfig.Service3);
+                _activeServiceMapper.Add(ProcessPhase.Service3, QServiceConfig.Service5);
 
                 _initialized = true;
             }
@@ -212,11 +220,10 @@ namespace WebEntryPoint.MQ
             DataBag msgObj = msg.Body as DataBag;
             _logger.Debug("EntryHandler: picking up {0}", msgObj.MessageId);
             msgObj.AddToContent("Service log for {0}", msgObj.MessageId);
-            foreach (var key in _serviceMap.Keys)
-            {
-                msgObj.AddToContent("{0}: {1}, {2}", key, _serviceMap[key].Name, _serviceMap[key].Description());
-            }
-            msgObj.AddSeparatorToContent();
+            msgObj.AddToContent("{0}: {1}, {2}", ProcessPhase.Service1, GetService(ProcessPhase.Service1).Name, GetService(ProcessPhase.Service1).Description());
+            msgObj.AddToContent("{0}: {1}, {2}", ProcessPhase.Service2, GetService(ProcessPhase.Service2).Name, GetService(ProcessPhase.Service2).Description());
+            msgObj.AddToContent("{0}: {1}, {2}", ProcessPhase.Service3, GetService(ProcessPhase.Service3).Name, GetService(ProcessPhase.Service3).Description());
+            msgObj.AddSeparator();
             //if (!_BatchTicker.IsRunning) _BatchTicker.Start();
             //AddCount++;
 
@@ -249,14 +256,14 @@ namespace WebEntryPoint.MQ
 
         private bool DetermineActualProcessingMode(DataBag dataBag, out string msg)
         {
-            var maxLoadReached = _serviceMap[dataBag.CurrentPhase].MaxLoadReached();
-            var serviceLoad = _serviceMap[dataBag.CurrentPhase].ServiceLoad;
+            var maxLoadReached = GetService(dataBag.CurrentPhase).MaxLoadReached();
+            var serviceLoad = GetService(dataBag.CurrentPhase).ServiceLoad;
 
             var paralell = RunsParalell();
             var result = maxLoadReached ? false : paralell;
 
             msg = dataBag.CurrentPhase.ToString();
-            if (maxLoadReached && paralell) msg += string.Format(" :Load ({0}) for service currently exceeds its max, processing this call sequential to reduce the service load", serviceLoad);
+            if (maxLoadReached && paralell) msg += string.Format(" : Cuurent service load ({0}) exceeds max, processing this call sequential to reduce the service load", serviceLoad);
             else msg += string.Format(" Actual processing mode: {1}", serviceLoad, paralell ? ExeModus.Paralell : ExeModus.Sequential);
             
             return result;
@@ -279,28 +286,7 @@ namespace WebEntryPoint.MQ
 
 
 
-        //private async Task PostBackUsingHttpClient(DataBag msgObj)
-        //{
-        //    using (var client = new System.Net.Http.HttpClient())
-        //    {
-        //        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", msgObj.socketToken);
  
-        //        var byteContent = SerializeDataBag(msgObj);
-        //        _logger.Debug("posting back: {0}", byteContent.ToString());
-        //        var response = await client.PostAsync(msgObj.PostBackUrl, byteContent);
-
-        //        _logger.Debug("postback returned '{0}'", response.StatusCode);
-        //        _webTracer.Send(msgObj.socketToken, "Posting back the result of {0} to {1} returned {2}",
-        //                                msgObj.Id, msgObj.PostBackUrl, response.StatusCode);
-        //    }
-        //}
-
-        //private ByteArrayContent SerializeDataBag(DataBag msgObj)
-        //{
-        //    var myContent = JsonConvert.SerializeObject(msgObj);
-        //    var buffer = System.Text.Encoding.UTF8.GetBytes(myContent);
-        //    return new ByteArrayContent(buffer);
-        //}
 
         public string StopAll()
         {
@@ -346,31 +332,37 @@ namespace WebEntryPoint.MQ
             if (dataBag != null)
             {
                 _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", dataBag.CurrentPhase, dataBag.MessageId);
-
-                var service = _serviceMap[dataBag.CurrentPhase];
+                WebService service = GetService(dataBag.CurrentPhase);
 
                 dataBag.TryCount++;
                 dataBag = await service.Call(dataBag);
 
                 msg.Body = dataBag; // #TODO check if this re-assignement is needed
-                if (dataBag.Retry && dataBag.TryCount >= service.MaxRetries)
+                var retry = dataBag.Retry;
+                if (retry)
                 {
-                    dataBag.Status = HttpStatusCode.ServiceUnavailable; 
-                    dataBag.AddToContent("{0} failed too many times, max-retries={1}. Skipping...", service.Url, service.MaxRetries);
+                    if (dataBag.TryCount < service.MaxRetries)
+                    {
+                        int delay = 1;
+                        _webTracer.Send(dataBag.socketToken, "{0} failed for {1}, Retry in {2} secs", service.Name, dataBag.MessageId, delay);
+                        dataBag.AddToContent("retry in {0} secs", delay);
+                        if (UseTimedRetry) ReQueueWithTimedDelay(msg, delay);
+                        else await ReQueueWithTaskDelay(msg, delay);
+                    }
+                    else
+                    {
+                        dataBag.Status = HttpStatusCode.ServiceUnavailable;
+                        dataBag.AddToContent("{0} failed too many times, max-retries={1}. Skipping...", service.Url, service.MaxRetries);
+                        dataBag.AddSeparator();
+                        retry = false;
+                    }
                 }
-                dataBag.AddSeparatorToContent();
 
-                if (dataBag.Retry)
-                {
-                    int delay = 1;
-                    _webTracer.Send(dataBag.socketToken, "Call to {1} (={2}) failed for {0}, Retry in {3} secs", dataBag.MessageId, dataBag.CurrentPhase, service.Name, delay);
-                    if (UseTimedRetry) ReQueueWithTimedDelay(msg, delay);
-                    else await ReQueueWithTaskDelay(msg, delay);
-                }
-                else
+                if (!retry)
                 {
                     var oldPhase = dataBag.CurrentPhase;
-                    dataBag.NextService();
+                    dataBag.CurrentPhase = NextPhase(dataBag);
+                    dataBag.Status = HttpStatusCode.OK;
                     dataBag.TryCount = 0;
                     _webTracer.Send(dataBag.socketToken, "Call to {1} (={3}) succeeded, dropping {0} in the MQ for {2}", dataBag.MessageId, oldPhase, dataBag.CurrentPhase, service.Name);
                     GetQueue(dataBag.CurrentPhase).Send(msg, dataBag.Label);
@@ -379,6 +371,27 @@ namespace WebEntryPoint.MQ
             else _webTracer.Send(dataBag.socketToken, "Conversion to DataBag Object failed!");
         }
 
+        private WebService GetService(ProcessPhase phase)
+        {
+            return _serviceMap[_activeServiceMapper[phase]];
+        }
+
+        private ProcessPhase NextPhase(DataBag bag )
+        {
+            switch (bag.CurrentPhase)
+            {
+                case ProcessPhase.Entry:
+                    return ProcessPhase.Service1;
+                case ProcessPhase.Service1:
+                    return ProcessPhase.Service2;
+                case ProcessPhase.Service2:
+                    return ProcessPhase.Service3;
+                case ProcessPhase.Service3:
+                    return ProcessPhase.Completed;
+                default:
+                    throw new Exception("Impossible Current phase -> " + bag.CurrentPhase);
+            };
+        }
         private async Task ReQueueWithTaskDelay(System.Messaging.Message msg, int secs)
         {
             await Task.Delay(1000 * secs);

@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using NLogWrapper;
 using System;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace WebEntryPoint.ServiceCall
@@ -10,17 +11,17 @@ namespace WebEntryPoint.ServiceCall
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(RealService), Helpers.Appsettings.LogLevel());
         private TokenManager _tokenManager;
-        public string AuthScope { get; private set; }
+        public string MyScope { get; private set; }
 
         public RealService(string serviceUrl, TokenManager tokenManager, string scope): base("Real Service", serviceUrl, 3)
         {
             _tokenManager = tokenManager;
-            AuthScope = scope;
+            MyScope = scope;
         }
 
         public async override Task<DataBag> Call(DataBag data)
         {
-            var token = _tokenManager.GetToken(AuthScope);
+            var token = _tokenManager.GetToken(MyScope);
 
             _logger.Info("Making get request to '{0}'", Url);
             var eHttp = new EasyHttp.Http.HttpClient();
@@ -44,7 +45,7 @@ namespace WebEntryPoint.ServiceCall
             var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
             _logger.Info(statusmsg);
 
-            await Task.Delay(1); //change to calling service async
+            await Task.Delay(1); // to make it async lol
             var reponseMsg = string.Empty;
             var ReponseMsg = string.Empty;
             if (exception) ReponseMsg = exceptionMessage;
@@ -57,6 +58,53 @@ namespace WebEntryPoint.ServiceCall
             data.AddToContent(ReponseMsg);
             data.Status = resultStatus;
             return data;
+        }
+
+        private async Task<DataBag> CallUsingHttpClient(DataBag data)
+        {
+            // HttpClient shows status 404 on a crash URL
+            var exceptionMessage = string.Empty;
+            var exception = false;
+            using (var client = new System.Net.Http.HttpClient())
+            {
+                HttpResponseMessage response = null;
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _tokenManager.GetToken(MyScope));
+                client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(HttpContentTypes.ApplicationJson));
+                try
+                {
+                    response = await client.GetAsync(Url);
+                }
+                catch (System.Net.WebException ex)
+                {
+                    exception = true;
+                    exceptionMessage = ex.Message;
+                }
+
+                var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : response.StatusCode;
+                var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
+                _logger.Info(statusmsg);
+
+                await Task.Delay(1); //change to calling service async
+                var reponseMsg = string.Empty;
+                var ReponseMsg = string.Empty;
+                if (exception) ReponseMsg = exceptionMessage;
+                else if (response.Headers.Contains("Accept"))
+                {
+                    ReponseMsg = ParseResult(await response.Content.ReadAsAsync<string>());
+                }
+                else ReponseMsg = statusmsg;
+                data.AddToContent(ReponseMsg);
+                data.Status = resultStatus;
+            }
+            return data;
+        }
+    
+
+        private ByteArrayContent SerializeDataBag(DataBag msgObj)
+        {
+            var myContent = JsonConvert.SerializeObject(msgObj);
+            var buffer = System.Text.Encoding.UTF8.GetBytes(myContent);
+            return new ByteArrayContent(buffer);
         }
 
         private string ParseResult(string json)

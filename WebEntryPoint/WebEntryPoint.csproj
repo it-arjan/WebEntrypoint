@@ -171,6 +171,8 @@
     <Reference Include="System.Xml.Serialization" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\WebserviceSettingsController.cs" />
+    <Compile Include="Controllers\CmdQueueController.cs" />
     <Compile Include="Controllers\EntryQueueController.cs" />
     <Compile Include="Helpers\IdSrv3.cs" />
     <Compile Include="Helpers\Appsettings.cs" />

@@ -20,6 +20,7 @@ namespace WebEntryPoint.ServiceCall
 
         public string GetToken(string scope)
         {
+            _logger.Debug("GetToken called with scope '{0}'", scope);
             lock (changeToken)
             {
                 var token = _tokenMap.ContainsKey(scope) ? _tokenMap[scope] : null;

@@ -57,35 +57,11 @@ namespace WebEntryPoint.ServiceCall
             if (msg != null) Content += string.Format(msg, args);
             else Content += "AddToContent: attempting to add a NULL msg ...";
         }
-        public void AddSeparatorToContent()
+        public void AddSeparator()
         {
             AddToContent("-----");
         }
-        public void NextService()
-        {
-            switch (CurrentPhase)
-            {
-                case ProcessPhase.Entry:
-                    CurrentPhase = ProcessPhase.Service1;
-                    Status = HttpStatusCode.OK;
-                    break;
-                case ProcessPhase.Service1:
-                    CurrentPhase = ProcessPhase.Service2;
-                    Status = HttpStatusCode.OK;
-                    break;
-                case ProcessPhase.Service2:
-                    CurrentPhase = ProcessPhase.Service3;
-                    Status = HttpStatusCode.OK;
-                    break;
-                case ProcessPhase.Service3:
-                    CurrentPhase = ProcessPhase.Completed;
-                    Status = HttpStatusCode.OK;
-                    break;
-                default:
-                    throw new Exception("Impossible Current phase -> " + CurrentPhase);
-            };
-            TryCount = 0;
-        }
+
     }
 
 }

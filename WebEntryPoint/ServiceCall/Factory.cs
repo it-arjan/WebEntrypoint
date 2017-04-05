@@ -10,10 +10,10 @@ namespace WebEntryPoint.ServiceCall
 {
     static class Factory
     {
-        public static WebService Create(ProcessPhase phase, TokenManager manager )
+        public static WebService Create(QServiceConfig serviceNr, TokenManager manager )
         {
-            var serviceUrl = Appsettings.ServiceX_Url(phase);
-            var serviceAuthScope = Appsettings.ServiceX_Scope(phase);
+            var serviceUrl = Appsettings.ServiceX_Url(serviceNr);
+            var serviceAuthScope = Appsettings.ServiceX_Scope(serviceNr);
 
             if (serviceUrl == "fake") return new FakeService(3);
             else return new RealService(serviceUrl, manager, serviceAuthScope);

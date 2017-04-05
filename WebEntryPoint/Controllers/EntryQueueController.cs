@@ -19,85 +19,15 @@ using Newtonsoft.Json;
 
 namespace WebEntryPoint
 {
-    
+
+    [Authorize]
     public class EntryQueueController: ApiController
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.Appsettings.LogLevel());
         private string _ToggleResult = string.Empty;
         MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
 
-        public IHttpActionResult Get()
-        {
-            var caller = User as ClaimsPrincipal;
-            if (caller != null)
-            {
-                var subjectClaim = caller.FindFirst("sub");
-                if (subjectClaim != null)
-                {
-                    return Json(new
-                    {
-                        message = "OK user",
-                        client = caller.FindFirst("client_id").Value,
-                        subject = subjectClaim.Value
-                    });
-                }
-                else
-                {
-                    return Json(new
-                    {
-                        message = "OK computer",
-                        client = caller.FindFirst("client_id").Value
-                    });
-                }
-            }
-            else
-            {
-                return Json(new
-                {
-                    message = "You seem to be anonymous..",
-                });
-            }
-        }
-        private void QueueCmdHandler(object sender, ReceiveCompletedEventArgs e)
-        {
-            System.Messaging.Message msg = _cmdQueue.Q.EndReceive(e.AsyncResult);
-            DataBag dataBag = msg.Body as DataBag;
-            _ToggleResult = dataBag.Content;
-        }
-
-        // COSR is enabled in  HttpHost
-        public IHttpActionResult Options()
-        {
-            return Json(new { message = "" });
-        }
-        [Authorize]
-        [HttpPost]
-        public IHttpActionResult Toggle(PostData received)
-        {
-            _logger.Debug("Toggled, data ={0}\n .. sending the msg..");
-            _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
-            var dataBag = new DataBag();
-            dataBag.socketToken = received.SocketToken;
-
-            var msg = new System.Messaging.Message();
-            msg.Body = dataBag;
-
-            _cmdQueue.SetFormatters(typeof(DataBag));
-            _cmdQueue.AddHandler(QueueCmdHandler);
-
-            _cmdQueue.Send(msg, dataBag.Label);
-            // todo listen on another queue
-            _logger.Debug("Waiting for toggle result");
-            var result = _cmdQueue.Q.BeginReceive();
-
-            while (string.IsNullOrEmpty(_ToggleResult)) Task.Delay(100).Wait();
-            _logger.Debug("Toggle result received {0}", _ToggleResult);
-
-            return Json(new { message = _ToggleResult });
-        }
-        [Authorize]
-        [HttpPost]
-        public IHttpActionResult Drop(PostData received)
+        public IHttpActionResult Post(PostData received)
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
 
@@ -130,7 +60,6 @@ namespace WebEntryPoint
             return Json(new { message = resultMsg });
         }
 
-        [Authorize]
         public class PostData
         {
             public string MessageId { get; set; }
