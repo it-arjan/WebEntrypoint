@@ -47,13 +47,12 @@ namespace WebEntryPoint.ServiceCall
             await Task.Delay(1); //change to calling service async
             var reponseMsg = string.Empty;
             var ReponseMsg = string.Empty;
-            if (!exception && eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
+            if (exception) ReponseMsg = exceptionMessage;
+            else if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
             {
-                reponseMsg = ParseResult(eHttp.Response.RawText);
+                ReponseMsg = ParseResult(eHttp.Response.RawText);
             }
-            else ReponseMsg = exception ? exceptionMessage : reponseMsg;
-
-            if (string.IsNullOrEmpty(ReponseMsg)) ReponseMsg = statusmsg;
+            else ReponseMsg = statusmsg;
 
             data.AddToContent(ReponseMsg);
             data.Status = resultStatus;
@@ -67,11 +66,11 @@ namespace WebEntryPoint.ServiceCall
             try
             {
                 var x = JsonConvert.DeserializeAnonymousType(json, anoType);
-                result = x.Message;
+                result = string.IsNullOrEmpty(x.Message)? "Unexpected: the webserice response is empty!" : x.Message;
             }
             catch (Exception ex)
             {
-                result = string.Format("Content-type says it's JSON but QM is unable to serialize webservice response. {0}", ex.Message);
+                result = string.Format("Content-type says it's JSON but we are unable to serialize webservice response. {0}", ex.Message);
             }
             return result;
         }
