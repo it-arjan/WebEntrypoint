@@ -30,6 +30,7 @@ namespace WebEntryPoint
         private string _service3Queue;
         private string _exitQueue;
         private string _cmdQueue;
+        private string _cmdReplyQueue;
         private Thread qmThread;
         private WebSockets.SocketServer _socketServer;
 
@@ -45,7 +46,8 @@ namespace WebEntryPoint
             _service3Queue = Appsettings.Service3Queue();
             _exitQueue = Appsettings.ExitQueue();
             _cmdQueue = Appsettings.CmdQueue();
-
+            _cmdReplyQueue = Appsettings.CmdReplyQueue();
+            
             CheckHealth();
         }
 
@@ -53,15 +55,16 @@ namespace WebEntryPoint
         {
             _logger.Info("Checking config settings..");
 
-            var queueSettings = string.Empty;
-            if (_entryQueue == null) queueSettings += Appsettings.EntryQueueKey + ", ";
-            if (_service1Queue == null) queueSettings += Appsettings.Service1QueueKey + ", ";
-            if (_service2Queue == null) queueSettings += Appsettings.Service2QueueKey + ", ";
-            if (_service3Queue == null) queueSettings += Appsettings.Service3QueueKey + ", ";
-            if (_exitQueue == null) queueSettings += ", " + Appsettings.ExitQueueKey + ", ";
-            if (_cmdQueue == null) queueSettings += ", " + Appsettings.CmdQueueKey;
+            var missingQueues = string.Empty;
+            if (_entryQueue == null) missingQueues += Appsettings.EntryQueueKey + ", ";
+            if (_service1Queue == null) missingQueues += Appsettings.Service1QueueKey + ", ";
+            if (_service2Queue == null) missingQueues += Appsettings.Service2QueueKey + ", ";
+            if (_service3Queue == null) missingQueues += Appsettings.Service3QueueKey + ", ";
+            if (_exitQueue == null) missingQueues += ", " + Appsettings.ExitQueueKey + ", ";
+            if (_cmdQueue == null) missingQueues += ", " + Appsettings.CmdQueueKey;
+            if (_cmdReplyQueue == null) missingQueues += ", " + Appsettings.CmdReplyQueueKey;
 
-            if (queueSettings != string.Empty) throw new Exception("The following queue-settings are not defined in app.config: " + queueSettings);
+            if (missingQueues != string.Empty) throw new Exception("The following queue-settings are not defined in app.config: " + missingQueues);
 
             if (Appsettings.SiliconClientId() == null) throw new Exception("setting 'SiliconClientId' is not present in app.config");
             if (Appsettings.SiliconClientSecret() == null) throw new Exception("setting 'SiliconClientSecret' is not present in app.config");
@@ -114,7 +117,7 @@ namespace WebEntryPoint
             _socketServer.Start(Appsettings.SocketServerUrl().Replace(Appsettings.Hostname(), "0.0.0.0"));
 
             _logger.Info("Starting queuemanager..");
-             queueManager = new QueueManager2(_entryQueue, _service1Queue, _service2Queue, _service3Queue, _exitQueue, _cmdQueue);
+             queueManager = new QueueManager2(_entryQueue, _service1Queue, _service2Queue, _service3Queue, _exitQueue, _cmdQueue, _cmdReplyQueue);
             qmThread = new Thread(queueManager.StartListening);
 
             qmThread.Start();  

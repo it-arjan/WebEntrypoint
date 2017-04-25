@@ -29,7 +29,7 @@ namespace WebEntryPoint.ServiceCall
             DecreaseServiceLoadSafe();
 
             dataBag.Status = result.status;
-            dataBag.AddToContent("{0}: {3} returned {1} on attempt ({2}). Current load ={4}, max={5}", dataBag.CurrentPhase, dataBag.Status, dataBag.TryCount, this.Name, ServiceLoad, MaxLoad);
+            dataBag.AddToLog("{0}: {3} returned {1} on attempt ({2}). Current load ={4}, max={5}", dataBag.CurrentPhase, dataBag.Status, dataBag.TryCount, this.Name, ServiceLoad, MaxLoad);
             return dataBag;
         }
 

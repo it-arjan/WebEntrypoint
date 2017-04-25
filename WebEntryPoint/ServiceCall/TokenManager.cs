@@ -56,16 +56,19 @@ namespace WebEntryPoint.ServiceCall
             var payloadStr = Encoding.UTF8.GetString(payloadBytesDecoded, 0, payloadBytesDecoded.Length);
             var payload = JsonConvert.DeserializeAnonymousType(payloadStr, new { Exp = 0UL });
 
-            var dd1970CET = new DateTime(1970, 1, 1, 0, 0, 0).AddHours(1);
-            _logger.Debug("Expired Check: the token({1}) is valid until {0}.", dd1970CET.AddSeconds(payload.Exp), scope);
 
-            //=> Comparing the exp timestamp to the current timestamp
-            var currentTimestamp = (ulong)(DateTime.UtcNow.AddHours(1) - dd1970CET).TotalSeconds;
+            var date1970CET = new DateTime(1970, 1, 1, 0, 0, 0).AddHours(1);
+            _logger.Debug("Expired Check: the token({1}) is valid until {0}.", date1970CET.AddSeconds(payload.Exp), scope);
 
-            var result = currentTimestamp + 10 > payload.Exp; // 10 sec is just a margin
-            if (result) _logger.Info("Expired Check: token({0}) expired.", scope);
-            else _logger.Info("Expired Check: token({0}) still valid.", scope);
-            return result;
+            //=> Get the current timestamp
+            var currentTimestamp = (ulong)(DateTime.UtcNow.AddHours(1) - date1970CET).TotalSeconds;
+            // Compare
+            var isExpired = currentTimestamp + 10 > payload.Exp; // 10 sec = margin
+            var logMsg = isExpired  ? string.Format("Expired Check: token({0}) is expired.", scope)
+                                    : string.Format("Expired Check: token({0}) still valid.", scope);
+            _logger.Info(logMsg);
+
+            return isExpired;
         }
 
         private TokenResponse GetNewClientToken(string scope)

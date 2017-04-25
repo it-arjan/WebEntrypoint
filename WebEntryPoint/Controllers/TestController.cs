@@ -11,7 +11,6 @@ namespace WebEntryPoint
 {
     public class TestController: ApiController
     {
-        [EnableCors(origins: "http://local.frontend,https://local.frontend,http://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com,https://ec2-52-57-195-49.eu-central-1.compute.amazonaws.com", headers: "*", methods: "*")]
         public IHttpActionResult Get()
         {
             var caller = User as ClaimsPrincipal;

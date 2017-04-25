@@ -19,6 +19,7 @@ using Newtonsoft.Json;
 
 namespace WebEntryPoint
 {
+    [Authorize]
     public class WebserviceSettingsController: ApiController
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(WebserviceSettingsController), Helpers.Appsettings.LogLevel());

@@ -51,7 +51,7 @@ namespace WebEntryPoint.ServiceCall
             }
         }
 
-        public void AddToContent(string msg, params object[] args)
+        public void AddToLog(string msg, params object[] args)
         {
             Content += "\n";
             if (msg != null) Content += string.Format(msg, args);
@@ -59,9 +59,12 @@ namespace WebEntryPoint.ServiceCall
         }
         public void AddSeparator()
         {
-            AddToContent("-----");
+            AddToLog("-----");
         }
-
+        public void AddShortSeparator()
+        {
+            AddToLog("--");
+        }
     }
 
 }

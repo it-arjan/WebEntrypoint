@@ -31,6 +31,7 @@ namespace WebEntryPoint.Helpers
         public const string Service3QueueKey = "service3Queue";
         public const string ExitQueueKey = "exitQueue";
         public const string CmdQueueKey = "commandQueue";
+        public const string CmdReplyQueueKey = "commandReplyQueue";
 
         public const string serviceXHostnameKey = "service@-@.hostname.fullpath";
         public const string serviceXScopeKey = "service@-@.auth.scope";
@@ -126,6 +127,10 @@ namespace WebEntryPoint.Helpers
         public static string CmdQueue()
         {
             return ConfigurationManager.AppSettings.Get(CmdQueueKey);
+        }
+        public static string CmdReplyQueue()
+        {
+            return ConfigurationManager.AppSettings.Get(CmdReplyQueueKey);
         }
 
         public static string ReplaceInSettingKey(QServiceConfig phase, string replaceKey)

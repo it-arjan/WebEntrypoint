@@ -41,7 +41,6 @@ namespace WebEntryPoint
             dataBag.Label = received.MessageId + " - " + DateTime.Now.ToShortTimeString();
             dataBag.MessageId = received.MessageId;
             dataBag.PostBackUrl = received.PostBackUrl;
-            dataBag.AddToContent("Service output log for '{0}'\n", received.MessageId);
             dataBag.socketToken = received.SocketToken;
             dataBag.doneToken = received.DoneToken;
             dataBag.UserName = received.UserName;

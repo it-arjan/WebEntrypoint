@@ -29,8 +29,8 @@ namespace WebEntryPoint
         private static void LogException(object sender, UnhandledExceptionEventArgs e)
         {
             var ex = e.ExceptionObject as Exception;
-            if (ex != null) Log("UnhandledException", "Errorrr"); 
-            else Log("UnhandledException", "Cast of exception object to exceptin FAILED");
+            if (ex != null) Log("UnhandledException", ex.ToString()); 
+            else Log("UnhandledException", "Cast of exception object to Exception FAILED");
         }
 
         private static void LogException(object sender, System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs e)
@@ -40,7 +40,7 @@ namespace WebEntryPoint
 
         private static void Log(string type, string exceptionInfo)
         {
-            _logger.Error("{0} event raised in {1}: \n \t\t{1}", type, AppDomain.CurrentDomain.FriendlyName, exceptionInfo);
+            _logger.Error("{0} event raised in {1}: \n \t\t{2}", type, AppDomain.CurrentDomain.FriendlyName, exceptionInfo);
         }
     }
 }

@@ -55,14 +55,14 @@ namespace WebEntryPoint.ServiceCall
             }
             else ReponseMsg = statusmsg;
 
-            data.AddToContent(ReponseMsg);
+            data.AddToLog(ReponseMsg);
             data.Status = resultStatus;
             return data;
         }
 
         private async Task<DataBag> CallUsingHttpClient(DataBag data)
         {
-            // HttpClient shows status 404 on a crash URL
+            // HttpClient shows status 404 on the crash URL
             var exceptionMessage = string.Empty;
             var exception = false;
             using (var client = new System.Net.Http.HttpClient())
@@ -93,7 +93,7 @@ namespace WebEntryPoint.ServiceCall
                     ReponseMsg = ParseResult(await response.Content.ReadAsAsync<string>());
                 }
                 else ReponseMsg = statusmsg;
-                data.AddToContent(ReponseMsg);
+                data.AddToLog(ReponseMsg);
                 data.Status = resultStatus;
             }
             return data;
@@ -124,7 +124,7 @@ namespace WebEntryPoint.ServiceCall
         }
         public override string Description()
         {
-            return String.Format("Service runs at {0}, \n\t\tmax load = {1}, max retries ={2}", Url, MaxLoad, MaxRetries);
+            return String.Format("Url={0}, \n\t\tmax load = {1}, max retries ={2}", Url, MaxLoad, MaxRetries);
         }
     }
 }
