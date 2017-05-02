@@ -65,6 +65,10 @@ namespace WebEntryPoint.ServiceCall
         {
             AddToLog("--");
         }
+        public void AddStatusMsg()
+        {
+            AddToLog("Current http status is {0}", Status);
+        }
     }
 
 }

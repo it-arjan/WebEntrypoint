@@ -148,7 +148,7 @@ namespace WebEntryPoint.MQ
             catch (Exception ex)
             {
                 var ex2 = new Exception(
-                    string.Format("Error intitializing one of the queues : {0}, {1}, {2}, {3}, {4}", 
+                    string.Format("Error intitializing QM : {0}, {1}, {2}, {3}, {4}", 
                                     entry_Q, service1_Q, service2_Q, service3_Q, exit_Q),
                                     ex
                     );
@@ -239,13 +239,13 @@ namespace WebEntryPoint.MQ
             {
                 case CmdType.GetModus:
                     bag.CmdResult = GetModus();
-                    logMsg = string.Format("Execution modus is {0}", bag.CmdResult);
+                    logMsg = string.Format("modus is {0}", bag.CmdResult);
                     bag.Message = logMsg;
                     _logger.Debug(logMsg);
                     break;
                 case CmdType.ToggleModus:
                     bag.CmdResult = ToggleModus();
-                    logMsg = string.Format("Execution modus toggled to {0}", bag.CmdResult);
+                    logMsg = string.Format("modus now {0}", bag.CmdResult);
                     bag.Message = logMsg;
                     _logger.Debug(logMsg);
 

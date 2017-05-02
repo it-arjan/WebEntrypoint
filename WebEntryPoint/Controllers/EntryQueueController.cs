@@ -30,32 +30,38 @@ namespace WebEntryPoint
         public IHttpActionResult Post(PostData received)
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
-
-            received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
-
+            string resultMsg = string.Empty;
             var webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
-            webTracer.Send(received.SocketToken, "WebApi: '{0}' received.", received.MessageId);
+            if (received.MessageId.Length > 0)
+            {
+                received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
+                webTracer.Send(received.SocketToken, "WebApi: '{0}' received.", received.MessageId);
 
+                var dataBag = new DataBag();
+                dataBag.Label = received.MessageId + " - " + DateTime.Now.ToShortTimeString();
+                dataBag.MessageId = received.MessageId;
+                dataBag.PostBackUrl = received.PostBackUrl;
+                dataBag.socketToken = received.SocketToken;
+                dataBag.doneToken = received.DoneToken;
+                dataBag.UserName = received.UserName;
+                dataBag.Started = DateTime.Now;
 
-            var dataBag = new DataBag();
-            dataBag.Label = received.MessageId + " - " + DateTime.Now.ToShortTimeString();
-            dataBag.MessageId = received.MessageId;
-            dataBag.PostBackUrl = received.PostBackUrl;
-            dataBag.socketToken = received.SocketToken;
-            dataBag.doneToken = received.DoneToken;
-            dataBag.UserName = received.UserName;
-            dataBag.Started = DateTime.Now;
+                var msg = new System.Messaging.Message();
+                msg.Body = dataBag;
 
-            var msg = new System.Messaging.Message();
-            msg.Body = dataBag;
+                var entryQueue = new MSMQWrapper(Helpers.Appsettings.EntryQueue());
+                entryQueue.SetFormatters(typeof(DataBag));
+                entryQueue.Send(msg, dataBag.Label);
 
-            var entryQueue = new MSMQWrapper(Helpers.Appsettings.EntryQueue());
-            entryQueue.SetFormatters(typeof(DataBag));
-            entryQueue.Send(msg, dataBag.Label);
+                resultMsg = string.Format("WebApi: Dropped '{0}' in the entryQueue.", received.MessageId);
+                webTracer.Send(received.SocketToken, resultMsg);
+            }
+            else
+            {
+                resultMsg = string.Format("WebApi: Giving nothing gets you nothing!.", received.MessageId);
+                webTracer.Send(received.SocketToken, resultMsg);
 
-            string resultMsg = string.Format("WebApi: Dropped '{0}' in the entryQueue.", received.MessageId);
-            webTracer.Send(received.SocketToken, resultMsg);
-
+            }
             return Json(new { message = resultMsg });
         }
 

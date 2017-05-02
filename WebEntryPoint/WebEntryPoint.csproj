@@ -210,7 +210,8 @@
     <Compile Include="ServiceCall\FakeService.cs" />
     <Compile Include="ServiceCall\PostbackData.cs" />
     <Compile Include="ServiceCall\PostBackService.cs" />
-    <Compile Include="ServiceCall\RealService.cs" />
+    <Compile Include="ServiceCall\PcLookupService.cs" />
+    <Compile Include="ServiceCall\SimpleService.cs" />
     <Compile Include="ServiceCall\ServiceCallDataBag.cs" />
     <Compile Include="ServiceCall\TokenManager.cs" />
     <Compile Include="ServiceCall\WebService.cs" />

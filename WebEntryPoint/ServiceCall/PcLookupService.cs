@@ -7,25 +7,22 @@ using System.Threading.Tasks;
 
 namespace WebEntryPoint.ServiceCall
 {
-    internal class RealService : WebService
+    internal class PcLookupService : WebService
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(RealService), Helpers.Appsettings.LogLevel());
-        private TokenManager _tokenManager;
-        public string MyScope { get; private set; }
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PcLookupService), Helpers.Appsettings.LogLevel());
+        public string ApiKey { get; private set; }
 
-        public RealService(string serviceUrl, TokenManager tokenManager, string scope): base("Real Service", serviceUrl, 3)
+        public PcLookupService(string name, string serviceUrl, string apiKey): base("Postal Code Lookup", serviceUrl, 3)
         {
-            _tokenManager = tokenManager;
-            MyScope = scope;
+            ApiKey = apiKey;
         }
 
         public async override Task<DataBag> Call(DataBag data)
         {
-            var token = _tokenManager.GetToken(MyScope);
-
             _logger.Info("Making get request to '{0}'", Url);
+            throw new Exception("TODO");
             var eHttp = new EasyHttp.Http.HttpClient();
-            var auth_header = string.Format("Bearer {0}", token);
+            var auth_header = string.Format("Bearer {0}", ApiKey);
 
             eHttp.Request.AddExtraHeader("Authorization", auth_header);
             eHttp.Request.Accept= HttpContentTypes.ApplicationJson;
@@ -48,6 +45,7 @@ namespace WebEntryPoint.ServiceCall
             await Task.Delay(1); // to make it async lol
             var reponseMsg = string.Empty;
             var ReponseMsg = string.Empty;
+
             if (exception) ReponseMsg = exceptionMessage;
             else if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
             {
@@ -68,7 +66,7 @@ namespace WebEntryPoint.ServiceCall
             using (var client = new System.Net.Http.HttpClient())
             {
                 HttpResponseMessage response = null;
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _tokenManager.GetToken(MyScope));
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiKey);
                 client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(HttpContentTypes.ApplicationJson));
                 try
                 {
@@ -114,7 +112,7 @@ namespace WebEntryPoint.ServiceCall
             try
             {
                 var x = JsonConvert.DeserializeAnonymousType(json, anoType);
-                result = string.IsNullOrEmpty(x.Message)? "Unexpected: the webserice response is empty!" : x.Message;
+                result = string.IsNullOrEmpty(x.Message)? "Unexpected: the webservice response is empty!" : x.Message;
             }
             catch (Exception ex)
             {

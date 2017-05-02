@@ -33,6 +33,8 @@ namespace WebEntryPoint.Helpers
         public const string CmdQueueKey = "commandQueue";
         public const string CmdReplyQueueKey = "commandReplyQueue";
 
+        public const string serviceXTypeKey = "service@-@.type";
+        public const string serviceXNameKey = "service@-@.name";
         public const string serviceXHostnameKey = "service@-@.hostname.fullpath";
         public const string serviceXScopeKey = "service@-@.auth.scope";
         public const string LogLevelKey = "log.level";
@@ -138,12 +140,26 @@ namespace WebEntryPoint.Helpers
             return replaceKey.Replace("@-@", ((int)phase).ToString());
         }
 
+        public static string ServiceX_Type(QServiceConfig phase)
+        {
+            var settingKey = ReplaceInSettingKey(phase, serviceXTypeKey);
+            var setting = ConfigurationManager.AppSettings.Get(settingKey);
+
+            return setting;
+        }
+        public static string ServiceX_Name(QServiceConfig phase)
+        {
+            var settingKey = ReplaceInSettingKey(phase, serviceXNameKey);
+            var setting = ConfigurationManager.AppSettings.Get(settingKey);
+
+            return setting;
+        }
         public static string ServiceX_Url(QServiceConfig phase)
         {
             var settingKey = ReplaceInSettingKey(phase, serviceXHostnameKey);
             var setting = ConfigurationManager.AppSettings.Get(settingKey);
 
-            return setting.ToLower() != "fake" ? string.Format("{0}://{1}/", Scheme(), setting): "fake";
+            return setting?.ToLower() != "fake" ? string.Format("{0}://{1}/", Scheme(), setting) : "fake";
         }
 
         public static string ServiceX_Scope(QServiceConfig phase)
