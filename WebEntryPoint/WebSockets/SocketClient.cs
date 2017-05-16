@@ -49,7 +49,7 @@ namespace WebEntryPoint.WebSockets
             {
                 var tokSrc = new CancellationTokenSource();
 
-                string total_msg = string.Format("{0}#-_-_-#-Remote QueueManger: {1}", sessionToken, string.Format(msg, msgPars));
+                string total_msg = string.Format("{0}#-_-_-#-Queue Manager: {1}", sessionToken, string.Format(msg, msgPars));
                 var tsk=_wsClient.SendAsync(
                                new ArraySegment<byte>(Encoding.UTF8.GetBytes(total_msg)),
                                                    WebSocketMessageType.Text,

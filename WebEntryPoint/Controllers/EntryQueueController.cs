@@ -43,6 +43,7 @@ namespace WebEntryPoint
                 dataBag.PostBackUrl = received.PostBackUrl;
                 dataBag.socketToken = received.SocketToken;
                 dataBag.doneToken = received.DoneToken;
+                dataBag.AspSessionId = received.AspSessionId;
                 dataBag.UserName = received.UserName;
                 dataBag.Started = DateTime.Now;
 
@@ -72,6 +73,8 @@ namespace WebEntryPoint
             public string SocketToken { get; set; }
             public string DoneToken { get; set; }
             public string UserName { get; set; }
+            public string AspSessionId { get; set; }
+            
         }
     }
 }

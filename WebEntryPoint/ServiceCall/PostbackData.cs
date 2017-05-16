@@ -16,6 +16,7 @@ namespace WebEntryPoint.ServiceCall
             End = DateTime.Now;
             Duration = (decimal)(DateTime.Now - databag.Started).TotalSeconds;
             UserName = databag.UserName;
+            AspSessionId = databag.AspSessionId;
         }
         public string MessageId { get; set; }
         public string UserName { get; set; }
@@ -24,6 +25,6 @@ namespace WebEntryPoint.ServiceCall
 
         public decimal Duration { get; set; }
         public string Content { get; set; }
-
+        public string AspSessionId { get; set; }
     }
 }

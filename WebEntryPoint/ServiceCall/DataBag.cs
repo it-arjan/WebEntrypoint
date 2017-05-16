@@ -35,6 +35,8 @@ namespace WebEntryPoint.ServiceCall
         public int TryCount { get; set; }
         public string socketToken { get; set; }
         public string doneToken { get; set; }
+        public string AspSessionId{ get; set; }
+
         public string PostBackUrl { get; set; }
         public string UserName { get; set; }
 

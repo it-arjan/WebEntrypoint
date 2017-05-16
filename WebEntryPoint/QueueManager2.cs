@@ -299,7 +299,7 @@ namespace WebEntryPoint.MQ
             //AddCount++;
 
             _service1Q.Send(msg);
-            _webTracer.Send(msgObj.socketToken, "EntryHandler: Dropped {0} in the Q for service1", msgObj.MessageId);
+            _webTracer.Send(msgObj.socketToken, "Entry: Dropped {0} in the Queue for service.1", msgObj.MessageId);
 
             _entryQ.BeginReceive(); 
         }
@@ -312,7 +312,7 @@ namespace WebEntryPoint.MQ
 
             if (dataBag != null)
             {
-                string logMsg = string.Format("Generic Handler received '{0}' from queue '{1}'", dataBag.MessageId, queue.Name);
+                string logMsg = string.Format("Received '{0}' from '{1}'", dataBag.MessageId, queue.Name);
                 _logger.Debug(logMsg);
                 _webTracer.Send(dataBag.socketToken, logMsg);
 
@@ -345,7 +345,7 @@ namespace WebEntryPoint.MQ
             var paralell = RunsParalell();
             var result = maxLoadReached ? false : paralell;
 
-            msg = string.Format("QM, {0}: ",dataBag.CurrentPhase.ToString());
+            msg = string.Format("{0}: ", GetService(dataBag.CurrentPhase).Name);
             if (maxLoadReached && paralell) msg += string.Format("Current load ({0}) exceeds the max, processing request sequential to reduce the service load", serviceLoad);
             else msg += string.Format("Request handled {0}", paralell ? ExeModus.Paralell : ExeModus.Sequential);
             
@@ -358,7 +358,7 @@ namespace WebEntryPoint.MQ
             DataBag msgObj = msg.Body as DataBag;
 
             _webTracer.Send(msgObj.socketToken,
-                "Received '{0}' as completed, posting it back..", msgObj.MessageId);
+                "Exit handler: received '{0}' as completed, posting it back..", msgObj.MessageId);
 
             var postbackService = new PostBackService(msgObj.PostBackUrl, _tokenManager, Helpers.IdSrv3.ScopeMvcFrontEnd);
             var status = postbackService.CallSync(msgObj); // #TODO call Async
