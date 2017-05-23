@@ -207,7 +207,7 @@ namespace WebEntryPoint.MQ
             _entryQ.BeginReceive();
             _service1Q.BeginReceive();
             _service2Q.BeginReceive();
-            _service3Q.BeginReceive();
+            _service3Q.BeginReceive(); 
             _exitQ.BeginReceive();
 
             _logger.Info("Queue manager listening on queues {0}, {1}, {2}, {3}, {4}. \nCommand queue = {5}", 

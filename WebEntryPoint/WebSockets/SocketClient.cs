@@ -2,8 +2,6 @@
 using System.Text;
 using System.Net.WebSockets;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Security.Cryptography.X509Certificates;
 using NLogWrapper;
 
 namespace WebEntryPoint.WebSockets
