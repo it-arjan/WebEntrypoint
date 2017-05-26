@@ -33,10 +33,12 @@ namespace WebEntryPoint.ServiceCall
         public string Label { get; set; }
         public string MessageId { get; set; }
         public int TryCount { get; set; }
+
+        public string notificationToken { get; set; }
         public string socketToken { get; set; }
         public string doneToken { get; set; }
         public string AspSessionId{ get; set; }
-
+        
         public string PostBackUrl { get; set; }
         public string UserName { get; set; }
 

@@ -42,6 +42,7 @@ namespace WebEntryPoint
                 dataBag.MessageId = received.MessageId;
                 dataBag.PostBackUrl = received.PostBackUrl;
                 dataBag.socketToken = received.SocketToken;
+                dataBag.notificationToken = received.NotificationToken;
                 dataBag.doneToken = received.DoneToken;
                 dataBag.AspSessionId = received.AspSessionId;
                 dataBag.UserName = received.UserName;
@@ -71,6 +72,8 @@ namespace WebEntryPoint
             public string MessageId { get; set; }
             public string PostBackUrl { get; set; }
             public string SocketToken { get; set; }
+            public string NotificationToken { get; set; }
+            
             public string DoneToken { get; set; }
             public string UserName { get; set; }
             public string AspSessionId { get; set; }
