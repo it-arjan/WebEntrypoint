@@ -21,13 +21,13 @@ namespace WebEntryPoint
 {
 
     [Authorize]
-    public class EntryQueueController: ApiController
+    public partial class EntryQueueController: ApiController
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.Appsettings.LogLevel());
         private string _ToggleResult = string.Empty;
         MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
 
-        public IHttpActionResult Post(PostData received)
+        public IHttpActionResult Post(EntryQueuePostData received)
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             string resultMsg = string.Empty;
@@ -65,19 +65,6 @@ namespace WebEntryPoint
 
             }
             return Json(new { message = resultMsg });
-        }
-
-        public class PostData
-        {
-            public string MessageId { get; set; }
-            public string PostBackUrl { get; set; }
-            public string SocketToken { get; set; }
-            public string NotificationToken { get; set; }
-            
-            public string DoneToken { get; set; }
-            public string UserName { get; set; }
-            public string AspSessionId { get; set; }
-            
         }
     }
 }

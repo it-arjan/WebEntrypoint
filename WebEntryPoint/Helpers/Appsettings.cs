@@ -12,7 +12,7 @@ namespace WebEntryPoint.Helpers
     {
         None = 0, Service1, Service2, Service3, Service4, Service5, Service6, Service7, Enum_End
     }
-    static class Appsettings
+    static public class Appsettings
     {
         public const string SiliconClientIdKey = "SiliconClientId";
         public const string SiliconClientSecretKey = "SiliconClientSecret";

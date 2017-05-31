@@ -22,7 +22,7 @@ namespace WebEntryPoint
 {
 
     [Authorize]
-    public class CmdQueueController: ApiController
+    public partial class CmdQueueController: ApiController
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(CmdQueueController), Helpers.Appsettings.LogLevel());
         private CmdBag _cmdResult_HOT = null;
@@ -158,15 +158,6 @@ namespace WebEntryPoint
                 _logger.Error("Error casting cmd type. Value {0}, message {1}", ex.Message, value);
                 return CmdType.NotSet;
             }
-        }
-
-        public class CmdPostData
-        {
-            public string CmdType { get; set; }
-            public string Service1Nr { get; set; }
-            public string Service2Nr { get; set; }
-            public string Service3Nr { get; set; }
-            public string SocketToken { get; set; }
         }
     }
 }
