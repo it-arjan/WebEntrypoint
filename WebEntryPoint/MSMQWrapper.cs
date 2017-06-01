@@ -9,8 +9,10 @@ using System.Configuration;
 namespace WebEntryPoint.MQ
 {
     /*
-     * This is just a wrapper for convenience and serving as documentation, goal is not to completely encapusulate msmq
-     * MSMQ often fails (without msg) on incorrect usage which is not documented
+     * This is just a wrapper for convenience and serving as documentation, 
+     * goal is NOT to completely encapusulate MSMQ
+     * MSMQ often fails (without msg) on incorrect usage, behavior which is also often not documented
+     * 
      * */
     public class MSMQWrapper
     {
@@ -20,29 +22,12 @@ namespace WebEntryPoint.MQ
         {
             Name = qname;
             Q = new MessageQueue(qname);
-            //_formatterTypes = new List<Type>();
         }
         public bool Transactional { get { return Q.Transactional; } }
         //private List<Type> _formatterTypes { get; set; }
         public void SetFormatters(params Type[] types)
         {
-            //foreach (var t in types)
-            //{
-            //    if (!_formatterTypes.Contains(t))
-            //        _formatterTypes.Add(t);
-            //}
             Q.Formatter = new XmlMessageFormatter(types);
-        }
-
-        public bool PeekCompleted(PeekCompletedEventHandler handler, bool attach = true)
-        {
-            if (Q.Transactional)
-            {
-                if (attach) Q.PeekCompleted += handler;
-                else Q.PeekCompleted -= handler;
-                return true;
-            }
-            else throw new MsMQQueueUsageException(string.Format("{0}: Setting PeekComplete for non-transactional queues breaks the thing ", Name));
         }
 
         public void AddHandler(QueueManager2.EventHandlerWithQueue handler, MSMQWrapper queue)
@@ -114,41 +99,6 @@ namespace WebEntryPoint.MQ
                 Q.Send(msg, msgLabel); 
             }
         }
-        public void Send(List<Message> msgs, string label = null)
-        {
-            var msgLabel = label != null ? label : Q.Transactional ? "msg sent transactional" : "msg sent non-transactional";
-            if (Q.Transactional)
-            {
-                //send them in one transaction
-                MessageQueueTransaction transaction = new MessageQueueTransaction();
-                try
-                {
-                    transaction.Begin();
-                    foreach (var msg in msgs)
-                    {
-                        Q.Send(msg, msgLabel, transaction);
-                    }
-                    transaction.Commit();
-                }
-                catch (System.Exception e)
-                {
-                    transaction.Abort();
-                    throw e;
-                }
-                finally
-                {
-                    transaction.Dispose();
-                }
-            }
-            else
-            {
-                foreach (var msg in msgs)
-                {
-                    Send(msg, msgLabel);
-                }
-            }
-        }
-
         public void BeginReceive()
         {
             if (!Q.Transactional)

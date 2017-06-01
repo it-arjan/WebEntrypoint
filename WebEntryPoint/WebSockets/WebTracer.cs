@@ -32,8 +32,6 @@ namespace WebEntryPoint.WebSockets
                 }
 
                 _socket.Send(sessionToken, msg, msgPars);
-                //tsk.Wait(); tsk.Dispose();
-                //_socket.Close();
             }
             catch (Exception ex)
             {

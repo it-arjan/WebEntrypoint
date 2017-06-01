@@ -8,9 +8,9 @@ using WebEntryPoint.MQ;
 
 namespace WebEntryPoint.ServiceCall
 {
-    static class Factory
+    public class WebserviceFactory : IWebserviceFactory
     {
-        public static WebService Create(QServiceConfig serviceNr, TokenManager manager )
+        public IWebService Create(QServiceConfig serviceNr, ITokenManager tokenManager )
         {
             var serviceType = Appsettings.ServiceX_Type(serviceNr).ToLower();
             var serviceName = Appsettings.ServiceX_Name(serviceNr).ToLower();
@@ -24,7 +24,7 @@ namespace WebEntryPoint.ServiceCall
                 if (serviceName.ToLower() == "pc lookup") return new PcLookupService(serviceName, serviceUrl, serviceAuthScope);
                 else throw new Exception(serviceName + ": Unknown Custom service");
             }
-            else return new SimpleService(serviceName, serviceUrl, serviceAuthScope, manager);
+            else return new SimpleService(serviceName, serviceUrl, serviceAuthScope, tokenManager);
         }
     }
 }

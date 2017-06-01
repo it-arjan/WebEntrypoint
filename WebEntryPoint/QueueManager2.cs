@@ -37,12 +37,14 @@ namespace WebEntryPoint.MQ
         private MSMQWrapper _cmdQ;
         private MSMQWrapper _cmdReplyQ;
 
-        private Dictionary<QServiceConfig, WebService> _serviceMap;
+        private Dictionary<QServiceConfig, IWebService> _serviceMap;
         private Dictionary<ProcessPhase, QServiceConfig> _activeServiceMapper;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
         private WebTracer _webTracer;
 
-        private TokenManager _tokenManager;
+        private IWebserviceFactory _wsFactory;
+
+        private ITokenManager _tokenManager;
         Stopwatch _BatchTicker = new Stopwatch();
 
         public bool ProcessMsgPerMsg { get; set; }
@@ -65,13 +67,17 @@ namespace WebEntryPoint.MQ
         public int AddCount { get; private set; }
         object _processed = new object();
 
-        public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q)
+        public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q,
+                                IWebserviceFactory wsFactoryInject,
+                                ITokenManager tokenManagerInject
+            )
         {
+            _wsFactory = wsFactoryInject;
             ProcessedList = new List<string>();
-            _serviceMap = new Dictionary<QServiceConfig, WebService>();
+            _serviceMap = new Dictionary<QServiceConfig, IWebService>();
             _activeServiceMapper = new Dictionary<ProcessPhase, QServiceConfig>();
             _webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
-            _tokenManager = new TokenManager();
+            _tokenManager = tokenManagerInject;
 
             Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q);
         }
@@ -104,7 +110,7 @@ namespace WebEntryPoint.MQ
 
                 _cmdQ = new MSMQWrapper(cmd_Q);
                 _cmdReplyQ = new MSMQWrapper(cmdReply_Q);
-                
+
                 // clean up the cmd queues
                 _cmdQ.Q.Purge();
                 _cmdReplyQ.Q.Purge();
@@ -114,32 +120,12 @@ namespace WebEntryPoint.MQ
                 _service2Q = new MSMQWrapper(service2_Q);
                 _service3Q = new MSMQWrapper(service3_Q);
                 _exitQ = new MSMQWrapper(exit_Q);
-
-                _cmdQ.SetFormatters(typeof(CmdBag), typeof(string));
-                _cmdQ.AddHandler(QueueCmdHandler);
-
-                _cmdReplyQ.SetFormatters(typeof(CmdBag), typeof(string));
-                // nothing is read from _cmdReplyQ
-
-                _entryQ.SetFormatters(typeof(DataBag), typeof(string));
-                _entryQ.AddHandler(EntryHandler);
-
-                _service1Q.SetFormatters(typeof(DataBag), typeof(string));
-                _service1Q.AddHandler(GenericHandler, _service1Q);
-
-                _service2Q.SetFormatters(typeof(DataBag), typeof(string));
-                _service2Q.AddHandler(GenericHandler, _service2Q);
-
-                _service3Q.SetFormatters(typeof(DataBag), typeof(string));
-                _service3Q.AddHandler(GenericHandler, _service3Q);
-
-                _exitQ.SetFormatters(typeof(DataBag), typeof(string));
-                _exitQ.AddHandler(ExitHandler);
+                ConfigureQFormatters_Handlers();
 
                 var serviceNr = QServiceConfig.Service1;
                 while (serviceNr != QServiceConfig.Enum_End)
                 {
-                    _serviceMap.Add(serviceNr, Factory.Create(serviceNr, _tokenManager));
+                    _serviceMap.Add(serviceNr, _wsFactory.Create(serviceNr, _tokenManager));
                     serviceNr++;
                 }
                 ConfigureActiveServices(QServiceConfig.Service1, QServiceConfig.Service2, QServiceConfig.Service3);
@@ -157,6 +143,31 @@ namespace WebEntryPoint.MQ
             return null;
 
         }
+
+        private void ConfigureQFormatters_Handlers()
+        {
+            _cmdQ.SetFormatters(typeof(CmdBag), typeof(string));
+            _cmdQ.AddHandler(QueueCmdHandler);
+
+            _cmdReplyQ.SetFormatters(typeof(CmdBag), typeof(string));
+            // nothing is read from _cmdReplyQ
+
+            _entryQ.SetFormatters(typeof(DataBag), typeof(string));
+            _entryQ.AddHandler(EntryHandler);
+
+            _service1Q.SetFormatters(typeof(DataBag), typeof(string));
+            _service1Q.AddHandler(GenericHandler, _service1Q);
+
+            _service2Q.SetFormatters(typeof(DataBag), typeof(string));
+            _service2Q.AddHandler(GenericHandler, _service2Q);
+
+            _service3Q.SetFormatters(typeof(DataBag), typeof(string));
+            _service3Q.AddHandler(GenericHandler, _service3Q);
+
+            _exitQ.SetFormatters(typeof(DataBag), typeof(string));
+            _exitQ.AddHandler(ExitHandler);
+        }
+
         private CmdBag GetActiveServices()
         {
             var result = new CmdBag();
@@ -408,8 +419,8 @@ namespace WebEntryPoint.MQ
 
         private async Task ProcessMessageAsync(System.Messaging.Message msg)
         {
-            DataBag dataBag = msg.Body as DataBag;
-            WebService service = GetService(dataBag.CurrentPhase);
+            var dataBag = msg.Body as DataBag;
+            var service = GetService(dataBag.CurrentPhase);
             _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", service.Name, dataBag.MessageId);
 
             dataBag.TryCount++;
@@ -447,9 +458,9 @@ namespace WebEntryPoint.MQ
             }
         }
 
-        private WebService GetService(ProcessPhase phase)
+        private IWebService GetService(ProcessPhase phase)
         {
-            WebService result;
+            IWebService result;
             lock (_activeServiceMapperLock)
             {
                 result = _serviceMap[_activeServiceMapper[phase]];

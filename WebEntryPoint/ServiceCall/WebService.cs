@@ -8,11 +8,12 @@ using System.Threading;
 
 namespace WebEntryPoint.ServiceCall
 {
-    public abstract class WebService
+    public abstract class WebService : IWebService
     {
-        private object _lockActiveCalls = new object();
+        private object _safeAccessLock = new object();
         public int MaxRetries { get; protected set; }
         public int ServiceLoad { get; set; }
+        public int WaitingQueueLength { get; set; }
         public int MaxLoad { get; protected set; }
         public string Url { get; private set; }
         protected Semaphore _accessSemaphore;
@@ -25,18 +26,28 @@ namespace WebEntryPoint.ServiceCall
             _accessSemaphore= new Semaphore(maxLoad, maxLoad);
             MaxRetries = maxRetries;
             ServiceLoad = 0;
+            WaitingQueueLength = 0;
         }
         private void ChangeLoadSafe(int nr)
         {
-            lock (_lockActiveCalls)
+            lock (_safeAccessLock)
             {
                 ServiceLoad += nr;
+            }
+        }
+        private void ChangeWaitingQueueSafe(int nr)
+        {
+            lock (_safeAccessLock)
+            {
+                WaitingQueueLength += nr;
             }
         }
         protected TimeSpan TryAccess()
         {
             var startWait = DateTime.Now;
+            ChangeWaitingQueueSafe(1);
             _accessSemaphore.WaitOne();
+            ChangeWaitingQueueSafe(-1);
             ChangeLoadSafe(1);
             return DateTime.Now - startWait;
         }

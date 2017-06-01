@@ -8,7 +8,7 @@ using IdentityModel.Client;
 using NLogWrapper;
 namespace WebEntryPoint.ServiceCall
 {
-    public class TokenManager
+    public class TokenManager : ITokenManager
     {
         private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager), Helpers.Appsettings.LogLevel());
         private Dictionary<string, string> _tokenMap;

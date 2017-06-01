@@ -208,8 +208,11 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Controllers\TestController.cs" />
+    <Compile Include="ServiceCall\Interface\IWebserviceFactory.cs" />
+    <Compile Include="ServiceCall\Interface\IWebService.cs" />
+    <Compile Include="ServiceCall\Interface\ITokenManager.cs" />
     <Compile Include="ServiceCall\Models\CmdBag.cs" />
-    <Compile Include="ServiceCall\Factory.cs" />
+    <Compile Include="ServiceCall\WebserviceFactory.cs" />
     <Compile Include="ServiceCall\FakeService.cs" />
     <Compile Include="ServiceCall\Models\PostbackData.cs" />
     <Compile Include="ServiceCall\PostBackService.cs" />

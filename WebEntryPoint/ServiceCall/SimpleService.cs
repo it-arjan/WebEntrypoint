@@ -10,19 +10,22 @@ namespace WebEntryPoint.ServiceCall
     internal class SimpleService : WebService
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SimpleService), Helpers.Appsettings.LogLevel());
-        private TokenManager _tokenManager;
+        private ITokenManager _tokenManager;
         public string MyScope { get; private set; }
 
-        public SimpleService(string name, string url, string scope, TokenManager tokenManager): base(name, url, 3)
+        public SimpleService(string name, string url, string scope, ITokenManager tokenManager): base(name, url, 3)
         {
             _tokenManager = tokenManager;
             MyScope = scope;
         }
 
-        public async override Task<DataBag> Call(DataBag data)
+        public async override Task<DataBag> Call(DataBag dataBag)
         {
+            dataBag.AddToLog("-Attempting to call service, ({0}) others are currently waiting", this.WaitingQueueLength);
             var waitingTime = TryAccess();
-            data.AddToLog("-Waited {0} msec, current service load = {1}", waitingTime.TotalMilliseconds, this.ServiceLoad); var token = _tokenManager.GetToken(MyScope);
+            dataBag.AddToLog("-Waited {0} msec, current service load = {1}", waitingTime.TotalMilliseconds, this.ServiceLoad);
+
+            var token = _tokenManager.GetToken(MyScope);
 
             _logger.Info("Making get request to '{0}'", Url);
             var eHttp = new EasyHttp.Http.HttpClient();
@@ -34,7 +37,7 @@ namespace WebEntryPoint.ServiceCall
             var exception = false;
             try
             {
-                eHttp.Get(Url + data.MessageId);
+                eHttp.Get(Url + dataBag.MessageId);
  
                 var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : eHttp.Response.StatusCode;
                 var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
@@ -51,8 +54,8 @@ namespace WebEntryPoint.ServiceCall
                 }
                 else ReponseMsg = statusmsg;
 
-                data.AddToLog(ReponseMsg);
-                data.Status = resultStatus;
+                dataBag.AddToLog(ReponseMsg);
+                dataBag.Status = resultStatus;
             }
             catch (System.Net.WebException ex)
             {
@@ -63,7 +66,7 @@ namespace WebEntryPoint.ServiceCall
             {
                 ReleaseAccess();
             }
-            return data;
+            return dataBag;
         }
 
         private async Task<DataBag> CallUsingHttpClient(DataBag data)
