@@ -208,19 +208,19 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Controllers\TestController.cs" />
-    <Compile Include="ServiceCall\CmdBag.cs" />
+    <Compile Include="ServiceCall\Models\CmdBag.cs" />
     <Compile Include="ServiceCall\Factory.cs" />
     <Compile Include="ServiceCall\FakeService.cs" />
-    <Compile Include="ServiceCall\PostbackData.cs" />
+    <Compile Include="ServiceCall\Models\PostbackData.cs" />
     <Compile Include="ServiceCall\PostBackService.cs" />
     <Compile Include="ServiceCall\PcLookupService.cs" />
     <Compile Include="ServiceCall\SimpleService.cs" />
-    <Compile Include="ServiceCall\ServiceCallDataBag.cs" />
+    <Compile Include="ServiceCall\Models\ServiceCallDataBag.cs" />
     <Compile Include="ServiceCall\TokenManager.cs" />
     <Compile Include="ServiceCall\WebService.cs" />
     <Compile Include="WebSockets\SocketServer.cs" />
     <Compile Include="WebSockets\SocketClient.cs" />
-    <Compile Include="ServiceCall\DataBag.cs" />
+    <Compile Include="ServiceCall\Models\DataBag.cs" />
     <Compile Include="WebSockets\WebTracer.cs" />
   </ItemGroup>
   <ItemGroup>

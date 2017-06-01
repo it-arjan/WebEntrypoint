@@ -54,7 +54,7 @@ namespace WebEntryPoint.ServiceCall
             else ReponseMsg = statusmsg;
 
             data.AddToLog(ReponseMsg);
-            data.Status = resultStatus;
+            data.Status = resultStatus; 
             return data;
         }
 

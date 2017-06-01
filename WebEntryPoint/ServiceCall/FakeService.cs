@@ -24,12 +24,13 @@ namespace WebEntryPoint.ServiceCall
 
         public async override Task<DataBag>  Call(DataBag dataBag)
         {
-            IncreaseServiceLoadSafe();
+            var waitingTime = TryAccess();
+            dataBag.AddToLog("-Waited {0} msec, current service load = {1}", waitingTime.TotalMilliseconds, this.ServiceLoad);
             var result = await SimulateServiceCall(new ServiceCallDataBag {input=dataBag.MessageId });
-            DecreaseServiceLoadSafe();
+            ReleaseAccess();
 
             dataBag.Status = result.status;
-            dataBag.AddToLog("{0}: {3} returned {1} on attempt ({2}). Current load ={4}, max={5}", dataBag.CurrentPhase, dataBag.Status, dataBag.TryCount, this.Name, ServiceLoad, MaxLoad);
+            dataBag.AddToLog("{0}: {3} returned {1} on attempt ({2}). max service load={4}", dataBag.CurrentPhase, dataBag.Status, dataBag.TryCount, this.Name, MaxLoad);
             return dataBag;
         }
 

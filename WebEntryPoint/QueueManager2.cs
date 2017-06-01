@@ -339,6 +339,7 @@ namespace WebEntryPoint.MQ
 
         private bool DetermineModeForService(DataBag dataBag, out string msg)
         {
+            //code from before the semaphore
             var maxLoadReached = GetService(dataBag.CurrentPhase).MaxLoadReached();
             var serviceLoad = GetService(dataBag.CurrentPhase).ServiceLoad;
 
@@ -366,10 +367,6 @@ namespace WebEntryPoint.MQ
             if (status == HttpStatusCode.OK) _webTracer.Send(msgObj.socketToken, msgObj.doneToken);
             _exitQ.BeginReceive();
         }
-
-
-
- 
 
         public string StopAll()
         {

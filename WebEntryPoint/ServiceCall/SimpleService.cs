@@ -21,7 +21,8 @@ namespace WebEntryPoint.ServiceCall
 
         public async override Task<DataBag> Call(DataBag data)
         {
-            var token = _tokenManager.GetToken(MyScope);
+            var waitingTime = TryAccess();
+            data.AddToLog("-Waited {0} msec, current service load = {1}", waitingTime.TotalMilliseconds, this.ServiceLoad); var token = _tokenManager.GetToken(MyScope);
 
             _logger.Info("Making get request to '{0}'", Url);
             var eHttp = new EasyHttp.Http.HttpClient();
@@ -34,29 +35,34 @@ namespace WebEntryPoint.ServiceCall
             try
             {
                 eHttp.Get(Url + data.MessageId);
+ 
+                var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : eHttp.Response.StatusCode;
+                var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
+                _logger.Info(statusmsg);
+
+                await Task.Delay(1); // quick hack to make function async
+
+                var reponseMsg = string.Empty;
+                var ReponseMsg = string.Empty;
+                if (exception) ReponseMsg = exceptionMessage;
+                else if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
+                {
+                    ReponseMsg = ParseResult(eHttp.Response.RawText);
+                }
+                else ReponseMsg = statusmsg;
+
+                data.AddToLog(ReponseMsg);
+                data.Status = resultStatus;
             }
             catch (System.Net.WebException ex)
             {
                 exception = true;
                 exceptionMessage = ex.Message;
             }
-
-            var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : eHttp.Response.StatusCode;
-            var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
-            _logger.Info(statusmsg);
-
-            await Task.Delay(1); // to make it async lol
-            var reponseMsg = string.Empty;
-            var ReponseMsg = string.Empty;
-            if (exception) ReponseMsg = exceptionMessage;
-            else if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
+            finally
             {
-                ReponseMsg = ParseResult(eHttp.Response.RawText);
+                ReleaseAccess();
             }
-            else ReponseMsg = statusmsg;
-
-            data.AddToLog(ReponseMsg);
-            data.Status = resultStatus;
             return data;
         }
 
