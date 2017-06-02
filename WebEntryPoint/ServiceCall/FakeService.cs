@@ -8,7 +8,7 @@ using WebEntryPoint.MQ;
 
 namespace WebEntryPoint.ServiceCall
 {
-    class FakeService : WebService
+    public class FakeService : WebService
     {
         public int DoneCount { get; set; }
         private int _maxDelaySecs;
