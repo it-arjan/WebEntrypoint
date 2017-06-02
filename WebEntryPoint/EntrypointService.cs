@@ -15,6 +15,7 @@ using WebEntryPoint.MQ;
 using System.Threading;
 using WebEntryPoint.Helpers;
 using WebEntryPoint.ServiceCall;
+using WebEntryPoint.WebSockets;
 
 namespace WebEntryPoint
 {
@@ -26,7 +27,7 @@ namespace WebEntryPoint
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntrypointService), Appsettings.LogLevel());
 
         private Thread qmThread;
-        private WebSockets.SocketServer _socketServer;
+        private WebSockets.ISocketServer _socketServer;
 
         public EntrypointService()
         {
@@ -108,7 +109,7 @@ namespace WebEntryPoint
                 Appsettings.EntryQueue(),
                 Appsettings.Service1Queue(), Appsettings.Service2Queue(), Appsettings.Service3Queue(),
                 Appsettings.ExitQueue(), Appsettings.CmdQueue(), Appsettings.CmdReplyQueue(),
-                new WebserviceFactory(), new TokenManager()
+                new WebserviceFactory(), new TokenManager(), new SocketClient(Helpers.Appsettings.SocketServerUrl())
                  );
             qmThread = new Thread(queueManager.StartListening);
 

@@ -221,6 +221,8 @@
     <Compile Include="ServiceCall\Models\ServiceCallDataBag.cs" />
     <Compile Include="ServiceCall\TokenManager.cs" />
     <Compile Include="ServiceCall\WebService.cs" />
+    <Compile Include="WebSockets\interfaces\ISocketClient.cs" />
+    <Compile Include="WebSockets\interfaces\ISocketServer.cs" />
     <Compile Include="WebSockets\SocketServer.cs" />
     <Compile Include="ServiceCall\Models\DataBag.cs" />
     <Compile Include="WebSockets\SocketClient.cs" />

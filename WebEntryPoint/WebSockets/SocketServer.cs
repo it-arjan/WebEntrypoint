@@ -10,7 +10,7 @@ using System.Configuration;
 namespace WebEntryPoint.WebSockets
 {
 
-    public class SocketServer
+    public class SocketServer : ISocketServer
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.Appsettings.LogLevel());
         private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.Appsettings.LogLevel());
@@ -73,7 +73,7 @@ namespace WebEntryPoint.WebSockets
                         && !socket.ConnectionInfo.Host.Contains(Helpers.Appsettings.Hostname())
                         )
                     {
-                        _logger.Warn("Request from {0} not allowed in web.config", socket.ConnectionInfo.Host);
+                        _logger.Warn("Request from {0} not allowed, this is specified in web.config", socket.ConnectionInfo.Host);
                     }
                     LegalSocketList.ForEach(s => s.Send(message));
                 };

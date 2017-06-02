@@ -40,7 +40,7 @@ namespace WebEntryPoint.MQ
         private Dictionary<QServiceConfig, IWebService> _serviceMap;
         private Dictionary<ProcessPhase, QServiceConfig> _activeServiceMapper;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
-        private SocketClient _webTracer;
+        private ISocketClient _webTracer;
 
         private IWebserviceFactory _wsFactory;
 
@@ -69,7 +69,8 @@ namespace WebEntryPoint.MQ
 
         public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q,
                                 IWebserviceFactory wsFactoryInject,
-                                ITokenManager tokenManagerInject
+                                ITokenManager tokenManagerInject,
+                                ISocketClient socketClientInject
             )
         {
             _wsFactory = wsFactoryInject;
@@ -77,7 +78,7 @@ namespace WebEntryPoint.MQ
             ProcessedList = new List<string>();
             _serviceMap = new Dictionary<QServiceConfig, IWebService>();
             _activeServiceMapper = new Dictionary<ProcessPhase, QServiceConfig>();
-            _webTracer = new SocketClient(Helpers.Appsettings.SocketServerUrl());
+            _webTracer = socketClientInject;
 
             Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q);
         }

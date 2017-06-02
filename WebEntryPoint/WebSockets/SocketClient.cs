@@ -9,7 +9,7 @@ using System.Net.WebSockets;
 
 namespace WebEntryPoint.WebSockets
 {
-    public class SocketClient
+    public class SocketClient : ISocketClient
     {
         private ClientWebSocket _wsClient;
 
@@ -54,11 +54,12 @@ namespace WebEntryPoint.WebSockets
                 _logger.Error("Error when sending msg '{2}' to socket on server {0}. Msg: {1}", _url, ex.Message, msg);
             }
         }
-        public void Connect(string url)
+
+        private void Connect(string url)
         {
             lock (_serializer)
             { 
-                if (!Connected())
+                if (!this.Connected())
                 {
                     _logger.Info("Connecting to {0}", url);
                     _wsClient = new ClientWebSocket();
@@ -79,7 +80,7 @@ namespace WebEntryPoint.WebSockets
             }
         }
 
-        public void Close()
+        private void Close()
         {
             lock (_serializer)
             {
@@ -94,7 +95,7 @@ namespace WebEntryPoint.WebSockets
             }
         }
 
-        public bool Connected()
+        private bool Connected()
         {
             return _wsClient != null && _wsClient.State == WebSocketState.Open;
         }
