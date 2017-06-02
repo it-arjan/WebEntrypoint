@@ -42,14 +42,19 @@ namespace WebEntryPoint.ServiceCall
                 WaitingQueueLength += nr;
             }
         }
-        protected TimeSpan TryAccess()
+        protected void TryAccess(DataBag dataBag)
         {
+            dataBag.AddToLog("-Queueing up for {0}. \nCurrent load = {1}, ({2}) others are in line",this.Name, this.ServiceLoad, this.WaitingQueueLength);
+
             var startWait = DateTime.Now;
             ChangeWaitingQueueSafe(1);
+
             _accessSemaphore.WaitOne();
+
             ChangeWaitingQueueSafe(-1);
             ChangeLoadSafe(1);
-            return DateTime.Now - startWait;
+
+            dataBag.AddToLog("-Waited {0} msec", (DateTime.Now - startWait).TotalMilliseconds);
         }
         protected void ReleaseAccess()
         {

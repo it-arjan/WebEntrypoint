@@ -73,29 +73,18 @@ namespace WebEntryPoint.MQ
             )
         {
             _wsFactory = wsFactoryInject;
+            _tokenManager = tokenManagerInject;
             ProcessedList = new List<string>();
             _serviceMap = new Dictionary<QServiceConfig, IWebService>();
             _activeServiceMapper = new Dictionary<ProcessPhase, QServiceConfig>();
             _webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
-            _tokenManager = tokenManagerInject;
 
             Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q);
         }
 
-        public void ResetCounters()
-        {
-            lock (_processed)
-            {
-                DoneCount = 0;
-                AddCount = 0;
-                //_BatchTicker.Reset();
-                ProcessedList.Clear();
-            }
-        }
-
         public delegate void EventHandlerWithQueue(object sender, ReceiveCompletedEventArgs e, MSMQWrapper queue);
 
-        public string Init(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q)
+        private string Init(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q)
         {
             if (_initialized)
             {
@@ -386,8 +375,6 @@ namespace WebEntryPoint.MQ
                 return "Not running";
             }
             _initialized = false;
-
-            ResetCounters();
 
             _cmdQ.RemoveHandler(QueueCmdHandler);
             _entryQ.RemoveHandler(EntryHandler);

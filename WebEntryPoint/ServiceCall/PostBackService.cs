@@ -24,14 +24,14 @@ namespace WebEntryPoint.ServiceCall
 
         public HttpStatusCode CallSync(DataBag data)
         {
-            TryAccess();
+            TryAccess(data);
             var status = PostBackUsingEasyHttp(_tokenManager.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
             ReleaseAccess();
             if (status == HttpStatusCode.Unauthorized)
             {
                 // unlikely, but theoretically possible
                 _logger.Info("Unauthorized, try again once with a fresh token..");
-                TryAccess();
+                TryAccess(data);
                 status = PostBackUsingEasyHttp(_tokenManager.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
                 ReleaseAccess();
             }

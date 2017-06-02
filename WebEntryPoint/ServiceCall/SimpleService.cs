@@ -21,9 +21,7 @@ namespace WebEntryPoint.ServiceCall
 
         public async override Task<DataBag> Call(DataBag dataBag)
         {
-            dataBag.AddToLog("-Attempting to call service, ({0}) others are currently waiting", this.WaitingQueueLength);
-            var waitingTime = TryAccess();
-            dataBag.AddToLog("-Waited {0} msec, current service load = {1}", waitingTime.TotalMilliseconds, this.ServiceLoad);
+            TryAccess(dataBag);
 
             var token = _tokenManager.GetToken(MyScope);
 
