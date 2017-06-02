@@ -222,9 +222,8 @@
     <Compile Include="ServiceCall\TokenManager.cs" />
     <Compile Include="ServiceCall\WebService.cs" />
     <Compile Include="WebSockets\SocketServer.cs" />
-    <Compile Include="WebSockets\SocketClient.cs" />
     <Compile Include="ServiceCall\Models\DataBag.cs" />
-    <Compile Include="WebSockets\WebTracer.cs" />
+    <Compile Include="WebSockets\SocketClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">

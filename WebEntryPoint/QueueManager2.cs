@@ -40,7 +40,7 @@ namespace WebEntryPoint.MQ
         private Dictionary<QServiceConfig, IWebService> _serviceMap;
         private Dictionary<ProcessPhase, QServiceConfig> _activeServiceMapper;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
-        private WebTracer _webTracer;
+        private SocketClient _webTracer;
 
         private IWebserviceFactory _wsFactory;
 
@@ -77,7 +77,7 @@ namespace WebEntryPoint.MQ
             ProcessedList = new List<string>();
             _serviceMap = new Dictionary<QServiceConfig, IWebService>();
             _activeServiceMapper = new Dictionary<ProcessPhase, QServiceConfig>();
-            _webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
+            _webTracer = new SocketClient(Helpers.Appsettings.SocketServerUrl());
 
             Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q);
         }

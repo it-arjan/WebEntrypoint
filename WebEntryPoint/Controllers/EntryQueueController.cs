@@ -31,7 +31,7 @@ namespace WebEntryPoint
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             string resultMsg = string.Empty;
-            var webTracer = new WebTracer(Helpers.Appsettings.SocketServerUrl());
+            var webTracer = new SocketClient(Helpers.Appsettings.SocketServerUrl());
             if (received.MessageId.Length > 0)
             {
                 received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
