@@ -362,7 +362,8 @@ namespace WebEntryPoint.MQ
             _webTracer.Send(msgObj.socketToken,
                 "Exit handler: received '{0}' as completed, posting it back..", msgObj.MessageId);
 
-            var postbackService = new PostBackService(msgObj.PostBackUrl, _tokenManager, Helpers.IdSrv3.ScopeMvcFrontEnd);
+            var postbackService = _wsFactory.Create(QServiceConfig.Service8, _tokenManager);
+            postbackService.Url = msgObj.PostBackUrl;
             var status = postbackService.CallSync(msgObj); // #TODO call Async
             _webTracer.Send(msgObj.socketToken, "Postback returned {0}", status);
             if (status == HttpStatusCode.OK) _webTracer.Send(msgObj.socketToken, msgObj.doneToken);
@@ -409,12 +410,13 @@ namespace WebEntryPoint.MQ
         {
             var dataBag = msg.Body as DataBag;
             var service = GetService(dataBag.CurrentPhase);
+
             _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", service.Name, dataBag.MessageId);
 
             dataBag.TryCount++;
-            dataBag = await service.Call(dataBag);
+            dataBag = await service.CallAsync(dataBag);
 
-            msg.Body = dataBag; // #TODO check if this re-assignement is needed
+            msg.Body = dataBag; 
             var retry = dataBag.Retry;
             if (retry)
             {

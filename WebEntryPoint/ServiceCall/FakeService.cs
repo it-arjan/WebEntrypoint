@@ -22,7 +22,7 @@ namespace WebEntryPoint.ServiceCall
             _failRate = Decimal.Round((decimal)_failFactor / 10 * 100);
         }
 
-        public async override Task<DataBag>  Call(DataBag dataBag)
+        public async override Task<DataBag>  CallAsync(DataBag dataBag)
         {
             TryAccess(dataBag);
             var result = await SimulateServiceCall(new ServiceCallDataBag {input=dataBag.MessageId });

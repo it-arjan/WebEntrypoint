@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Net;
+using System.Threading.Tasks;
 
 namespace WebEntryPoint.ServiceCall
 {
@@ -8,10 +9,11 @@ namespace WebEntryPoint.ServiceCall
         int MaxRetries { get; }
         string Name { get; set; }
         int ServiceLoad { get; set; }
-        string Url { get; }
+        string Url { get; set; }
         int WaitingQueueLength { get; set; }
 
-        Task<DataBag> Call(DataBag data);
+        Task<DataBag> CallAsync(DataBag data);
+        HttpStatusCode CallSync(DataBag data);
         string Description();
         bool MaxLoadReached();
     }

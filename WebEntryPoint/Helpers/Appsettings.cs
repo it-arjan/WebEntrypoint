@@ -10,7 +10,7 @@ namespace WebEntryPoint.Helpers
 {
     public enum QServiceConfig
     {
-        None = 0, Service1, Service2, Service3, Service4, Service5, Service6, Service7, Enum_End
+        None = 0, Service1, Service2, Service3, Service4, Service5, Service6, Service7, Service8, Enum_End
     }
     static public class Appsettings
     {

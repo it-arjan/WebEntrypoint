@@ -17,7 +17,7 @@ namespace WebEntryPoint.ServiceCall
             ApiKey = apiKey;
         }
 
-        public async override Task<DataBag> Call(DataBag data)
+        public async override Task<DataBag> CallAsync(DataBag data)
         {
             _logger.Info("Making get request to '{0}'", Url);
             throw new Exception("TODO");

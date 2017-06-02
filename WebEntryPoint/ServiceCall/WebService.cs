@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WebEntryPoint.MQ;
 using System.Threading;
+using System.Net;
 
 namespace WebEntryPoint.ServiceCall
 {
@@ -15,7 +16,7 @@ namespace WebEntryPoint.ServiceCall
         public int ServiceLoad { get; set; }
         public int WaitingQueueLength { get; set; }
         public int MaxLoad { get; protected set; }
-        public string Url { get; private set; }
+        public string Url { get;  set; }
         protected Semaphore _accessSemaphore;
 
         public WebService(string name, string url, int maxLoad=3, int maxRetries =3)
@@ -68,7 +69,16 @@ namespace WebEntryPoint.ServiceCall
         }
 
         public string Name { get; set; }
-        public abstract Task<DataBag> Call(DataBag data);
         public abstract string Description();
+
+        public virtual Task<DataBag> CallAsync(DataBag data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual HttpStatusCode CallSync(DataBag data)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

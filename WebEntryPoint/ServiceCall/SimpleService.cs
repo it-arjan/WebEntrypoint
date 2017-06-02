@@ -19,7 +19,7 @@ namespace WebEntryPoint.ServiceCall
             MyScope = scope;
         }
 
-        public async override Task<DataBag> Call(DataBag dataBag)
+        public async override Task<DataBag> CallAsync(DataBag dataBag)
         {
             TryAccess(dataBag);
 

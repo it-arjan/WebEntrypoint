@@ -19,6 +19,7 @@ namespace WebEntryPoint.ServiceCall
             var serviceAuthScope = Appsettings.ServiceX_Scope(serviceNr);
 
             if (serviceType == "fake") return new FakeService(3);
+            if (serviceType == "postback") return new PostBackService("provied.by.cient", tokenManager, serviceAuthScope);
             if (serviceType == "custom")
             {
                 if (serviceName.ToLower() == "pc lookup") return new PcLookupService(serviceName, serviceUrl, serviceAuthScope);

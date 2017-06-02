@@ -22,7 +22,7 @@ namespace WebEntryPoint.ServiceCall
             AuthScope = scope;
         }
 
-        public HttpStatusCode CallSync(DataBag data)
+        public override HttpStatusCode CallSync(DataBag data)
         {
             TryAccess(data);
             var status = PostBackUsingEasyHttp(_tokenManager.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
@@ -62,11 +62,6 @@ namespace WebEntryPoint.ServiceCall
         public override string Description()
         {
             return string.Format("NO programmed delay or fails.");
-        }
-
-        public override Task<DataBag> Call(DataBag data)
-        {
-            throw new NotImplementedException();
         }
     }
 }
