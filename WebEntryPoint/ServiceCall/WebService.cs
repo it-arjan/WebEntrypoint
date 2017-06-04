@@ -65,7 +65,7 @@ namespace WebEntryPoint.ServiceCall
 
         public bool MaxLoadReached()
         {
-            return ServiceLoad > MaxLoad;
+            return ServiceLoad >= MaxLoad;
         }
 
         public string Name { get; set; }
