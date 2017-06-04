@@ -60,17 +60,6 @@ namespace WebEntryPoint.MQ
             Q.ReceiveCompleted -= handler;
         }
 
-        public async Task SendWithRandomDelayAsync(System.Messaging.Message msg, int maxDelay, string label = null)
-        {
-            // Idea: delay to make it more random
-            // unfortunately this slows down the adding of msgs A LOT (x50), also with small delays
-            Random rnd = new Random();
-            int msec = rnd.Next(1, maxDelay);
-            await Task.Delay(msec);
-            // send
-            Send(msg, label);
-        }
-
         public void Send(Message msg, string label = null)
         {
             var msgLabel = label != null ? label : Q.Transactional ? "msg sent transactional" : "msg sent non-transactional";

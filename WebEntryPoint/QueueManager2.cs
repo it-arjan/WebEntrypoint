@@ -353,6 +353,7 @@ namespace WebEntryPoint.MQ
             
             return result;
         }
+
         private void ExitHandler(object sender, ReceiveCompletedEventArgs e)
         {
 
@@ -486,7 +487,7 @@ namespace WebEntryPoint.MQ
         {
             System.Timers.Timer timer = new System.Timers.Timer();
             timer.Interval = 1000 * secs;
-            timer.Elapsed += (sender, e) => Timer_Elapsed(sender, e, msg); // #todo lookup what exctly this syntax means
+            timer.Elapsed += (sender, e) => Timer_Elapsed(sender, e, msg); // #todo check this syntax
             timer.Enabled = true;
         }
 
