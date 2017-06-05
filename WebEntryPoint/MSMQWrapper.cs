@@ -39,6 +39,11 @@ namespace WebEntryPoint.MQ
             else throw new MsMQQueueUsageException(string.Format("{0}: Setting Receivecomplete handler for non-transactional queues breaks the thing ", Name));
         }
 
+        public void RemoveHandler(QueueManager2.EventHandlerWithQueue handler)
+        {
+            Q.ReceiveCompleted -= (sender, e) => handler(sender, e, this);
+        }
+
         public void AddHandler(ReceiveCompletedEventHandler handler)
         {
             if (!Q.Transactional)
@@ -49,11 +54,6 @@ namespace WebEntryPoint.MQ
             else throw new MsMQQueueUsageException(string.Format("{0}: Setting Receivecomplete handler for non-transactional queues breaks the thing ", Name));
         }
 
-        public void RemoveHandler(QueueManager2.EventHandlerWithQueue handler)
-        {
-            MSMQWrapper q = new MSMQWrapper("dummy");
-            Q.ReceiveCompleted -= (sender, e) => handler(sender, e, q);
-        }
 
         public void RemoveHandler(ReceiveCompletedEventHandler handler)
         {

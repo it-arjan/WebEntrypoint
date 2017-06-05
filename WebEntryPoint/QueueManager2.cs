@@ -24,8 +24,8 @@ namespace WebEntryPoint.MQ
 
     public class QueueManager2
     {
-        private enum ExeModus { Sequential, Paralell };
-        private ExeModus _exeModus = ExeModus.Sequential;
+        public enum ExeModus { Sequential, Paralell };
+        private ExeModus _exeModus = ExeModus.Paralell;
         private object _activeServiceMapperLock = new object();
         private bool _initialized;
 
@@ -215,15 +215,15 @@ namespace WebEntryPoint.MQ
                 _entryQ.Q.FormatName, _service1Q.Q.FormatName, _service2Q.Q.FormatName, _service3Q.Q.FormatName, _exitQ.Q.FormatName, _cmdQ.Q.FormatName);
         }
 
-        public string ToggleModus()
+        public ExeModus ToggleModus()
         {
             _exeModus = RunsParalell() ? ExeModus.Sequential : ExeModus.Paralell;
             return GetModus();
         }
 
-        public string GetModus()
+        public ExeModus GetModus()
         {
-            return _exeModus.ToString();
+            return _exeModus;
         }
 
         private bool RunsParalell()
@@ -239,13 +239,13 @@ namespace WebEntryPoint.MQ
             switch (bag.CmdType)
             {
                 case CmdType.GetModus:
-                    bag.CmdResult = GetModus();
+                    bag.CmdResult = GetModus().ToString();
                     logMsg = string.Format("modus is {0}", bag.CmdResult);
                     bag.Message = logMsg;
                     _logger.Debug(logMsg);
                     break;
                 case CmdType.ToggleModus:
-                    bag.CmdResult = ToggleModus();
+                    bag.CmdResult = ToggleModus().ToString();
                     logMsg = string.Format("modus now {0}", bag.CmdResult);
                     bag.Message = logMsg;
                     _logger.Debug(logMsg);
@@ -344,7 +344,7 @@ namespace WebEntryPoint.MQ
             var maxLoadReached = GetService(dataBag.CurrentPhase).MaxLoadReached();
             var serviceLoad = GetService(dataBag.CurrentPhase).ServiceLoad;
 
-            var paralell = RunsParalell();
+            var paralell = this.RunsParalell();
             var result = maxLoadReached ? false : paralell;
 
             msg = string.Format("{0}: ", GetService(dataBag.CurrentPhase).Name);
@@ -380,6 +380,7 @@ namespace WebEntryPoint.MQ
             _initialized = false;
 
             _cmdQ.RemoveHandler(QueueCmdHandler);
+            _cmdReplyQ.RemoveHandler(QueueCmdHandler);
             _entryQ.RemoveHandler(EntryHandler);
             _service1Q.RemoveHandler(GenericHandler);
             _service2Q.RemoveHandler(GenericHandler);
