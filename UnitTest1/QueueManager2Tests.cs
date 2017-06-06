@@ -196,22 +196,21 @@ namespace WebEntryPoint.MQ.Tests
 
             QueueManager2 qm;
             MockupQueueManager(factory, out postbackMoq, out UnitTestQlist, out qm);
-
             qm.StartListening();
+
             var result = qm.StopAll();
-            Assert.IsTrue(result == null, "stopall did not execute correctly");
+            Assert.IsTrue(result == 0, "stopall returned " + result);
+
+            DropMessages(UnitTestQlist[0], 1); 
+            Task.Delay(100).Wait();
 
             var Q = new MSMQWrapper(UnitTestQlist[0]);
-            Q.Q.Purge();
-
-            DropMessages(Q, 2); // 2 because BeginReceive eats a msg regardless if there's a handler
-            Task.Delay(100).Wait();
             var nr_messages = Q.Q.GetAllMessages().Length;
             Assert.IsTrue(nr_messages == 1, "nr msgs != 1 but " + nr_messages);
         }
 
         [TestMethod()]
-        public void MSMQ_BeginReceive_Also_Eats_Msg_Without_Handler()
+        public void Bare_MSMQ_BeginReceive_Also_Eats_Msg_Without_Handler()
         {
             // Bare MSMQ test
             var qname = @".\Private$\autoTestEntry";
@@ -231,6 +230,18 @@ namespace WebEntryPoint.MQ.Tests
             DropMessages(qname, 1); Task.Delay(100).Wait();
             nr_messages = Q.GetAllMessages().Length;
             Assert.IsTrue(nr_messages == 1, "nr msgs != 1 but " + nr_messages); // This one stays
+
+            Q.BeginReceive();
+            Q.Dispose(); // only Dispose cancels beginreceive
+
+            var Q2 = new MessageQueue(qname);
+            nr_messages = Q2.GetAllMessages().Length;
+            Assert.IsTrue(nr_messages == 0, "nr msgs != 0 but " + nr_messages);
+
+            DropMessages(qname, 1); Task.Delay(100).Wait();
+            nr_messages = Q2.GetAllMessages().Length;
+            Assert.IsTrue(nr_messages == 1, "nr msgs != 1 but " + nr_messages);
+
         }
     }
 }

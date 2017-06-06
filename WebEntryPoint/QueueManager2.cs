@@ -146,13 +146,13 @@ namespace WebEntryPoint.MQ
             _entryQ.AddHandler(EntryHandler);
 
             _service1Q.SetFormatters(typeof(DataBag), typeof(string));
-            _service1Q.AddHandler(GenericHandler, _service1Q);
+            _service1Q.AddHandler(GenericHandler);
 
             _service2Q.SetFormatters(typeof(DataBag), typeof(string));
-            _service2Q.AddHandler(GenericHandler, _service2Q);
+            _service2Q.AddHandler(GenericHandler);
 
             _service3Q.SetFormatters(typeof(DataBag), typeof(string));
-            _service3Q.AddHandler(GenericHandler, _service3Q);
+            _service3Q.AddHandler(GenericHandler);
 
             _exitQ.SetFormatters(typeof(DataBag), typeof(string));
             _exitQ.AddHandler(ExitHandler);
@@ -305,15 +305,16 @@ namespace WebEntryPoint.MQ
             _entryQ.BeginReceive(); 
         }
 
-        private async void GenericHandler(object sender, ReceiveCompletedEventArgs e, MSMQWrapper queue)
+        //private async void GenericHandler(object sender, ReceiveCompletedEventArgs e, MSMQWrapper queue)
+        private async void GenericHandler(object sender, ReceiveCompletedEventArgs e)
         {
-            // we could also cast the sender to a msmq, but not to MSMQWrapper, so we use EndReceive
-            System.Messaging.Message msg = queue.Q.EndReceive(e.AsyncResult);
+            var bareQ = ((MessageQueue)sender);
+            System.Messaging.Message msg = bareQ.EndReceive(e.AsyncResult);
             DataBag dataBag = msg.Body as DataBag;
 
             if (dataBag != null)
             {
-                string logMsg = string.Format("Received '{0}' from '{1}'", dataBag.MessageId, queue.Name);
+                string logMsg = string.Format("Received '{0}' from '{1}'", dataBag.MessageId, bareQ.Path);
                 _logger.Debug(logMsg);
                 _webTracer.Send(dataBag.socketToken, logMsg);
 
@@ -323,13 +324,13 @@ namespace WebEntryPoint.MQ
 
                 if (paralell)
                 {
-                    queue.BeginReceive();
+                    bareQ.BeginReceive();
                     await ProcessMessageAsync(msg);
                 }
                 else
                 {
                     await ProcessMessageAsync(msg);
-                    queue.BeginReceive();
+                    bareQ.BeginReceive();
                 }
             }
             else
@@ -371,22 +372,36 @@ namespace WebEntryPoint.MQ
             _exitQ.BeginReceive();
         }
 
-        public string StopAll()
+        public int StopAll()
         {
             if (!_initialized)
             {
-                return "Not running";
+                return -1;
             }
             _initialized = false;
 
             _cmdQ.RemoveHandler(QueueCmdHandler);
+            _cmdQ.Q.Dispose();
+
             _cmdReplyQ.RemoveHandler(QueueCmdHandler);
+            _cmdReplyQ.Q.Dispose();
+
             _entryQ.RemoveHandler(EntryHandler);
+            _entryQ.Q.Dispose();
+
             _service1Q.RemoveHandler(GenericHandler);
+            _service1Q.Q.Dispose();
+
             _service2Q.RemoveHandler(GenericHandler);
+            _service2Q.Q.Dispose();
+
             _service3Q.RemoveHandler(GenericHandler);
+            _service3Q.Q.Dispose();
+
             _exitQ.RemoveHandler(ExitHandler);
-            return null;
+            _exitQ.Q.Dispose();
+
+            return 0;
         }
 
         private MSMQWrapper GetQueue(ProcessPhase phase)
