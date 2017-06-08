@@ -13,7 +13,7 @@ namespace WebEntryPoint.ServiceCall
         private ITokenManager _tokenManager;
         public string MyScope { get; private set; }
 
-        public SimpleService(string name, string url, string scope, ITokenManager tokenManager): base(name, url, 3)
+        public SimpleService(string name, string url, string scope, int maxload, ITokenManager tokenManager): base(name, url, maxload)
         {
             _tokenManager = tokenManager;
             MyScope = scope;

@@ -319,7 +319,7 @@ namespace WebEntryPoint.MQ
                 _webTracer.Send(dataBag.socketToken, logMsg);
 
                 string LogMsg = string.Empty;
-                bool paralell = DetermineModeForService(dataBag, out LogMsg);
+                bool paralell = DetermineModeForThisCall(dataBag, out LogMsg) == ExeModus.Paralell;
                 dataBag.AddToLog(LogMsg);
 
                 if (paralell)
@@ -339,19 +339,27 @@ namespace WebEntryPoint.MQ
             }
         }
 
-        private bool DetermineModeForService(DataBag dataBag, out string msg)
+        private ExeModus DetermineModeForThisCall(DataBag dataBag, out string msg)
         {
-            //code from before the semaphore
-            var maxLoadReached = GetService(dataBag.CurrentPhase).MaxLoadReached();
-            var serviceLoad = GetService(dataBag.CurrentPhase).ServiceLoad;
-
+            var result = ExeModus.Sequential;
+            var resultMsg = string.Empty;
             var paralell = this.RunsParalell();
-            var result = maxLoadReached ? false : paralell;
+            if (paralell)
+            {
+                //code from before the semaphore
+                var SemQtooLong = GetService(dataBag.CurrentPhase).SemaphoreQueueLength > 1;
+                result = SemQtooLong ? ExeModus.Sequential : ExeModus.Paralell;
 
-            msg = string.Format("{0}: ", GetService(dataBag.CurrentPhase).Name);
-            if (maxLoadReached && paralell) msg += string.Format("Current load ({0}) exceeds the max, processing request sequential to reduce the service load", serviceLoad);
-            else msg += string.Format("Request handled {0}", paralell ? ExeModus.Paralell : ExeModus.Sequential);
-            
+                resultMsg = string.Format("{0}-Wrapper: ", GetService(dataBag.CurrentPhase).Name);
+                if (SemQtooLong)
+                {
+                    resultMsg += string.Format("Handling this request Sequential to reduce the service load",
+                      GetService(dataBag.CurrentPhase).ServiceLoad);
+                }
+                else resultMsg += "Handling request Paralell";
+            }
+            else resultMsg += "Handling request Sequential";
+            msg = resultMsg;
             return result;
         }
 

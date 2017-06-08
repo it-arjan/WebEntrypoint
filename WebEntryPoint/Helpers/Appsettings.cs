@@ -37,6 +37,8 @@ namespace WebEntryPoint.Helpers
         public const string serviceXNameKey = "service@-@.name";
         public const string serviceXHostnameKey = "service@-@.hostname.fullpath";
         public const string serviceXScopeKey = "service@-@.auth.scope";
+        public const string serviceXMaxloadKey = "service@-@.max.load";
+
         public const string LogLevelKey = "log.level";
 
         public static bool Ssl()
@@ -168,6 +170,16 @@ namespace WebEntryPoint.Helpers
             var setting = ConfigurationManager.AppSettings.Get(settingKey);
 
             return setting;
+        }
+        public static int ServiceX_Maxload(QServiceConfig phase)
+        {
+            var settingKey = ReplaceInSettingKey(phase, serviceXMaxloadKey);
+
+            return GetIntSetting(settingKey);
+        }
+        private static int GetIntSetting(string key)
+        {
+            return Convert.ToInt16(ConfigurationManager.AppSettings.Get(key));
         }
     }
 }

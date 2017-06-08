@@ -14,7 +14,7 @@ namespace WebEntryPoint.ServiceCall
         private object _safeAccessLock = new object();
         public int MaxRetries { get; protected set; }
         public int ServiceLoad { get; set; }
-        public int WaitingQueueLength { get; set; }
+        public int SemaphoreQueueLength { get; set; }
         public int MaxLoad { get; protected set; }
         public string Url { get;  set; }
         protected Semaphore _accessSemaphore;
@@ -27,7 +27,7 @@ namespace WebEntryPoint.ServiceCall
             _accessSemaphore= new Semaphore(maxLoad, maxLoad);
             MaxRetries = maxRetries;
             ServiceLoad = 0;
-            WaitingQueueLength = 0;
+            SemaphoreQueueLength = 0;
         }
         private void ChangeLoadSafe(int nr)
         {
@@ -40,12 +40,12 @@ namespace WebEntryPoint.ServiceCall
         {
             lock (_safeAccessLock)
             {
-                WaitingQueueLength += nr;
+                SemaphoreQueueLength += nr;
             }
         }
         protected void TryAccess(DataBag dataBag)
         {
-            dataBag.AddToLog("-Queueing up for {0}. \nCurrent load = {1}, ({2}) others are in line",this.Name, this.ServiceLoad, this.WaitingQueueLength);
+            dataBag.AddToLog("-Queueing up for {0}. \nCurrent load = {1}, ({2}) others are in line",this.Name, this.ServiceLoad, this.SemaphoreQueueLength);
 
             var startWait = DateTime.Now;
             ChangeWaitingQueueSafe(1);

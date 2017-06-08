@@ -10,7 +10,7 @@ namespace WebEntryPoint.ServiceCall
         string Name { get; set; }
         int ServiceLoad { get; set; }
         string Url { get; set; }
-        int WaitingQueueLength { get; set; }
+        int SemaphoreQueueLength { get; set; }
 
         Task<DataBag> CallAsync(DataBag data);
         HttpStatusCode CallSync(DataBag data);

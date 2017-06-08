@@ -62,7 +62,7 @@ namespace WebEntryPoint.ServiceCall
 
         public override string Description()
         {
-            return string.Format("programmed delay: 0-{0} secs, fail rate: {1}%", _maxDelaySecs, _failRate);
+            return string.Format("programmed delay: 0-{0} secs, fail rate: {1}%, maxload={2}, maxretries={3}", _maxDelaySecs, _failRate, MaxLoad, MaxRetries);
         }
     }
 }
