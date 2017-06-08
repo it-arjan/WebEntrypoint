@@ -12,6 +12,6 @@ namespace WebEntryPoint
         public string DoneToken { get; set; }
         public string UserName { get; set; }
         public string AspSessionId { get; set; }
-            
+        public int NrDrops { get; set; }
     }
 }
