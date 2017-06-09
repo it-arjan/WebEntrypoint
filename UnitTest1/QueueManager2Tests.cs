@@ -210,7 +210,7 @@ namespace WebEntryPoint.MQ.Tests
         }
 
         [TestMethod()]
-        public void Bare_MSMQ_BeginReceive_Also_Eats_Msg_Without_Handler()
+        public void Bare_MSMQ_OnlyDisposeCancelsBeginReceive()
         {
             // Bare MSMQ test
             var qname = @".\Private$\autoTestEntry";
@@ -221,24 +221,19 @@ namespace WebEntryPoint.MQ.Tests
 
             var Q = new MessageQueue(qname);
             Q.Purge();
-            Q.BeginReceive();
-
+ 
             DropMessages(qname, 1); Task.Delay(100).Wait();
             var nr_messages = Q.GetAllMessages().Length;
-            Assert.IsTrue(nr_messages == 0, "nr msgs != 0 but " + nr_messages); // no msg due to beginreceive
-
-            DropMessages(qname, 1); Task.Delay(100).Wait();
-            nr_messages = Q.GetAllMessages().Length;
             Assert.IsTrue(nr_messages == 1, "nr msgs != 1 but " + nr_messages); // This one stays
 
             Q.BeginReceive();
-            Q.Dispose(); // only Dispose cancels beginreceive
-
-            var Q2 = new MessageQueue(qname);
-            nr_messages = Q2.GetAllMessages().Length;
+            nr_messages = Q.GetAllMessages().Length;
             Assert.IsTrue(nr_messages == 0, "nr msgs != 0 but " + nr_messages);
 
+            Q.Dispose(); // only Dispose cancels beginreceive
+
             DropMessages(qname, 1); Task.Delay(100).Wait();
+            var Q2 = new MessageQueue(qname);
             nr_messages = Q2.GetAllMessages().Length;
             Assert.IsTrue(nr_messages == 1, "nr msgs != 1 but " + nr_messages);
 
