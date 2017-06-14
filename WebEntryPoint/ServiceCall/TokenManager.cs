@@ -10,7 +10,7 @@ namespace WebEntryPoint.ServiceCall
 {
     public class TokenManager : ITokenManager
     {
-        private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager), Helpers.Appsettings.LogLevel());
+        private ILogger _logger = LogManager.CreateLogger(typeof(TokenManager), Helpers.ConfigSettings.LogLevel());
         private Dictionary<string, string> _tokenMap;
         private object changeToken = new object();
         public TokenManager()
@@ -73,9 +73,9 @@ namespace WebEntryPoint.ServiceCall
 
         private TokenResponse GetNewClientToken(string scope)
         {
-            var tokenUrl = string.Format("{0}connect/token", Helpers.Appsettings.AuthUrl());
+            var tokenUrl = string.Format("{0}connect/token", Helpers.ConfigSettings.AuthUrl());
             _logger.Info("Getting a silicon client token at {0}", tokenUrl);
-            var client = new TokenClient(tokenUrl, Helpers.Appsettings.SiliconClientId(), Helpers.Appsettings.SiliconClientSecret());
+            var client = new TokenClient(tokenUrl, Helpers.ConfigSettings.SiliconClientId(), Helpers.ConfigSettings.SiliconClientSecret());
 
             var token = client.RequestClientCredentialsAsync(scope).Result;
             if (token.IsError) _logger.Error("Error getting Token for silicon Client: {0} ", token.Error);

@@ -9,7 +9,7 @@ namespace WebEntryPoint.ServiceCall
 {
     internal class SimpleService : WebService
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SimpleService), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SimpleService), Helpers.ConfigSettings.LogLevel());
         private ITokenManager _tokenManager;
         public string MyScope { get; private set; }
 

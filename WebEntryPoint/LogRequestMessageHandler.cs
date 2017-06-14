@@ -13,7 +13,7 @@ namespace WebEntryPoint
 
     public class LogRequestMessageHandler : DelegatingHandler
     {
-        private static ILogger _logger = LogManager.CreateLogger(typeof(LogRequestMessageHandler), Helpers.Appsettings.LogLevel());
+        private static ILogger _logger = LogManager.CreateLogger(typeof(LogRequestMessageHandler), Helpers.ConfigSettings.LogLevel());
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try

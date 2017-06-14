@@ -39,7 +39,7 @@ namespace WebEntryPoint.MQ
 
         private Dictionary<QServiceConfig, IWebService> _serviceMap;
         private Dictionary<ProcessPhase, QServiceConfig> _activeServiceMapper;
-        static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.Appsettings.LogLevel());
+        static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.ConfigSettings.LogLevel());
         private ISocketClient _webTracer;
 
         private IWebserviceFactory _wsFactory;

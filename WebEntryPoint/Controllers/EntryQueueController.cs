@@ -23,15 +23,15 @@ namespace WebEntryPoint
     [Authorize]
     public partial class EntryQueueController: ApiController
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntryQueueController), Helpers.ConfigSettings.LogLevel());
         private string _ToggleResult = string.Empty;
-        MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
+        MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.ConfigSettings.CmdQueue());
 
         public IHttpActionResult Post(EntryQueuePostData received)
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             string resultMsg = string.Empty;
-            var webTracer = new SocketClient(Helpers.Appsettings.SocketServerUrl()); 
+            var webTracer = new SocketClient(Helpers.ConfigSettings.SocketServerUrl()); 
             if (!string.IsNullOrEmpty(received.MessageId ))
             {
                 received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
@@ -53,7 +53,7 @@ namespace WebEntryPoint
                     var msg = new System.Messaging.Message();
                     msg.Body = dataBag;
 
-                    var entryQueue = new MSMQWrapper(Helpers.Appsettings.EntryQueue());
+                    var entryQueue = new MSMQWrapper(Helpers.ConfigSettings.EntryQueue());
                     entryQueue.SetFormatters(typeof(DataBag));
                     entryQueue.Send(msg, dataBag.Label);
                 }

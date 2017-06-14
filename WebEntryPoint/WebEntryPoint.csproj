@@ -187,9 +187,10 @@
     <Compile Include="Controllers\CmdQueueController.cs" />
     <Compile Include="Controllers\EntryQueueController.cs" />
     <Compile Include="Helpers\IdSrv3.cs" />
-    <Compile Include="Helpers\Appsettings.cs" />
+    <Compile Include="Helpers\ConfigSettings.cs" />
     <Compile Include="Helpers\RegEx.cs" />
     <Compile Include="Helpers\Security.cs" />
+    <Compile Include="Helpers\SettingsChecker.cs" />
     <Compile Include="HttpHost.cs" />
     <Compile Include="LogRequestMessageHandler.cs" />
     <Compile Include="MSMQWrapper.cs" />

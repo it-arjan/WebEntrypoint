@@ -12,7 +12,7 @@ namespace WebEntryPoint.Helpers
     {
         None = 0, Service1, Service2, Service3, Service4, Service5, Service6, Service7, Service8, Enum_End
     }
-    static public class Appsettings
+    static public class ConfigSettings
     {
         public const string SiliconClientIdKey = "SiliconClientId";
         public const string SiliconClientSecretKey = "SiliconClientSecret";
@@ -33,11 +33,11 @@ namespace WebEntryPoint.Helpers
         public const string CmdQueueKey = "commandQueue";
         public const string CmdReplyQueueKey = "commandReplyQueue";
 
-        public const string serviceXTypeKey = "service@-@.type";
-        public const string serviceXNameKey = "service@-@.name";
-        public const string serviceXHostnameKey = "service@-@.hostname.fullpath";
-        public const string serviceXScopeKey = "service@-@.auth.scope";
-        public const string serviceXMaxloadKey = "service@-@.max.load";
+        public const string serviceXTypeKey = "service@QServiceConfig@.type";
+        public const string serviceXNameKey = "service@QServiceConfig@.name";
+        public const string serviceXHostnameKey = "service@QServiceConfig@.hostname.fullpath";
+        public const string serviceXScopeKey = "service@QServiceConfig@.auth.scope";
+        public const string serviceXMaxloadKey = "service@QServiceConfig@.max.load";
 
         public const string LogLevelKey = "log.level";
 
@@ -139,7 +139,7 @@ namespace WebEntryPoint.Helpers
 
         public static string ReplaceInSettingKey(QServiceConfig phase, string replaceKey)
         {
-            return replaceKey.Replace("@-@", ((int)phase).ToString());
+            return replaceKey.Replace("@QServiceConfig@", ((int)phase).ToString());
         }
 
         public static string ServiceX_Type(QServiceConfig phase)

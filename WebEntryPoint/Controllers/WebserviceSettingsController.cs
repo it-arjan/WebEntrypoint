@@ -22,9 +22,9 @@ namespace WebEntryPoint
     [Authorize]
     public class WebserviceSettingsController: ApiController
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(WebserviceSettingsController), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(WebserviceSettingsController), Helpers.ConfigSettings.LogLevel());
         private string _ToggleResult = string.Empty;
-        MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
+        MSMQWrapper _cmdQueue = new MSMQWrapper(Helpers.ConfigSettings.CmdQueue());
         public int Delay { get; private set; }
         public int FailRate { get; private set;}
         public WebserviceSettingsController()

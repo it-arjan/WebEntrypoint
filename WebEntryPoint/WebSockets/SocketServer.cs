@@ -12,8 +12,8 @@ namespace WebEntryPoint.WebSockets
 
     public class SocketServer : ISocketServer
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.Appsettings.LogLevel());
-        private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.ConfigSettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.ConfigSettings.LogLevel());
         private WebSocketServer _socketServer;
         private List<IWebSocketConnection> LegalSocketList;
         private string[] _listenList;
@@ -27,8 +27,8 @@ namespace WebEntryPoint.WebSockets
         {
             _logger.Info("Starting on ip:port {0}", url);
             _socketServer = new WebSocketServer(url);
-            _listenList = Helpers.Appsettings.AllowedSocketListenerCsv().Split(',');
-            _logger.Info("Listening hostnames found in '{0}'", Helpers.Appsettings.AllowedSocketListenerCsvKey);
+            _listenList = Helpers.ConfigSettings.AllowedSocketListenerCsv().Split(',');
+            _logger.Info("Listening hostnames found in '{0}'", Helpers.ConfigSettings.AllowedSocketListenerCsvKey);
             foreach (var hostname in _listenList)
             {
                 _logger.Info("-{0}", hostname);
@@ -37,7 +37,7 @@ namespace WebEntryPoint.WebSockets
             if (url.Contains("wss"))
             {
                 _logger.Info("Server loading certificate from the store");
-                _socketServer.Certificate = Helpers.Security.GetCertificateFromStore(Helpers.Appsettings.Hostname());
+                _socketServer.Certificate = Helpers.Security.GetCertificateFromStore(Helpers.ConfigSettings.Hostname());
             }
             _socketServer.Start(socket =>
             {
@@ -67,10 +67,10 @@ namespace WebEntryPoint.WebSockets
                 socket.OnMessage = message =>
                 {
                     _logger.Trace("Message: '{0}'", message);
-                    _logger.Debug("SendList: '{0}'", Helpers.Appsettings.AllowedSocketListenerCsv());
+                    _logger.Debug("SendList: '{0}'", Helpers.ConfigSettings.AllowedSocketListenerCsv());
                     if (!LegalSocketList.Any() 
                         && socket.ConnectionInfo.Host != null
-                        && !socket.ConnectionInfo.Host.Contains(Helpers.Appsettings.Hostname())
+                        && !socket.ConnectionInfo.Host.Contains(Helpers.ConfigSettings.Hostname())
                         )
                     {
                         _logger.Warn("Request from {0} not allowed, this is specified in web.config", socket.ConnectionInfo.Host);

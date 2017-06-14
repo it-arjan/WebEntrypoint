@@ -11,13 +11,13 @@ namespace WebEntryPoint
     {
         // This code configures Web API. The Startup class is specified as a type
         // parameter in the WebApp.Start method.
-        private ILogger _logger = LogManager.CreateLogger(typeof(HttpHost), Helpers.Appsettings.LogLevel());
+        private ILogger _logger = LogManager.CreateLogger(typeof(HttpHost), Helpers.ConfigSettings.LogLevel());
 
         public void Configuration(IAppBuilder appBuilder)
         {
             appBuilder.UseIdentityServerBearerTokenAuthentication(new IdentityServerBearerTokenAuthenticationOptions
             {
-                Authority = Helpers.Appsettings.AuthUrl(),
+                Authority = Helpers.ConfigSettings.AuthUrl(),
                 ValidationMode = ValidationMode.Local, //local for jwt tokene, server-endpoint for referece tokenes
                 RequiredScopes = new[] {Helpers.IdSrv3.ScopeEntryQueueApi } 
             });
@@ -50,13 +50,13 @@ namespace WebEntryPoint
 
         private static string AllowedCorsUrls()
         {
-            var allowedCorsHostnames = Helpers.Appsettings.AllowedSocketListenerCsv().Split(new[] { "," }, System.StringSplitOptions.RemoveEmptyEntries);
+            var allowedCorsHostnames = Helpers.ConfigSettings.AllowedSocketListenerCsv().Split(new[] { "," }, System.StringSplitOptions.RemoveEmptyEntries);
             var urlCsv = string.Empty;
 
             foreach (var hostName in allowedCorsHostnames)
                 urlCsv = urlCsv == string.Empty
-                    ? string.Format("{0}://{1}", Helpers.Appsettings.Scheme(), hostName)
-                    : string.Format("{0}, {1}://{2}", urlCsv, Helpers.Appsettings.Scheme(), hostName);
+                    ? string.Format("{0}://{1}", Helpers.ConfigSettings.Scheme(), hostName)
+                    : string.Format("{0}, {1}://{2}", urlCsv, Helpers.ConfigSettings.Scheme(), hostName);
             return urlCsv;
         }
     }

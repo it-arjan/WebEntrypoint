@@ -9,7 +9,7 @@ namespace WebEntryPoint.ServiceCall
 {
     internal class PcLookupService : WebService
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PcLookupService), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PcLookupService), Helpers.ConfigSettings.LogLevel());
         public string ApiKey { get; private set; }
 
         public PcLookupService(string name, string serviceUrl, string apiKey): base("Postal Code Lookup", serviceUrl, 3)

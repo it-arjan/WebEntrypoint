@@ -13,7 +13,7 @@ namespace WebEntryPoint
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        static ILogger _logger = LogManager.CreateLogger(typeof(Program), Helpers.Appsettings.LogLevel());
+        static ILogger _logger = LogManager.CreateLogger(typeof(Program), Helpers.ConfigSettings.LogLevel());
         static void Main()
         {
             AppDomain.CurrentDomain.FirstChanceException += LogException;

@@ -24,7 +24,7 @@ namespace WebEntryPoint
     [Authorize]
     public partial class CmdQueueController: ApiController
     {
-        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(CmdQueueController), Helpers.Appsettings.LogLevel());
+        private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(CmdQueueController), Helpers.ConfigSettings.LogLevel());
         private CmdBag _cmdResult_HOT = null;
         MSMQWrapper _cmdQueue = null;
         MSMQWrapper _cmdReplyQueue = null;
@@ -32,11 +32,11 @@ namespace WebEntryPoint
 
         public CmdQueueController()
         {
-            _cmdQueue = new MSMQWrapper(Helpers.Appsettings.CmdQueue());
+            _cmdQueue = new MSMQWrapper(Helpers.ConfigSettings.CmdQueue());
             _cmdQueue.SetFormatters(typeof(CmdBag));
             //_cmdQueue.AddHandler(QueueCmdHandler);
 
-            _cmdReplyQueue = new MSMQWrapper(Helpers.Appsettings.CmdReplyQueue());
+            _cmdReplyQueue = new MSMQWrapper(Helpers.ConfigSettings.CmdReplyQueue());
             _cmdReplyQueue.SetFormatters(typeof(CmdBag));
             _cmdReplyQueue.AddHandler(ReplyQueueCmdHandler);
         }

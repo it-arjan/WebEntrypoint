@@ -15,7 +15,7 @@ namespace WebEntryPoint.WebSockets
 
         object _serializer = new object();
         private string _url;
-        static ILogger _logger = LogManager.CreateLogger(typeof(SocketClient), Helpers.Appsettings.LogLevel());
+        static ILogger _logger = LogManager.CreateLogger(typeof(SocketClient), Helpers.ConfigSettings.LogLevel());
 
         public SocketClient(string serverUrl)
         {
@@ -64,10 +64,10 @@ namespace WebEntryPoint.WebSockets
                     _logger.Info("Connecting to {0}", url);
                     _wsClient = new ClientWebSocket();
 
-                    if (Helpers.Appsettings.Ssl())
+                    if (Helpers.ConfigSettings.Ssl())
                     {
                         _logger.Info("Loading certificate from store");
-                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.Appsettings.Hostname()));
+                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.ConfigSettings.Hostname()));
                     }
                     var tokSrc = new CancellationTokenSource();
                     // cannot use await within lock, failr enough
