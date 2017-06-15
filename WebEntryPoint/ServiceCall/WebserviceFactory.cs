@@ -10,7 +10,7 @@ namespace WebEntryPoint.ServiceCall
 {
     public class WebserviceFactory : IWebserviceFactory
     {
-        public IWebService Create(QServiceConfig serviceNr, ITokenManager tokenManager )
+        public IWebService Create(QServiceConfig serviceNr, ITokenCache tokenManager )
         {
             var serviceType = ConfigSettings.ServiceX_Type(serviceNr).ToLower();
             var serviceName = ConfigSettings.ServiceX_Name(serviceNr).ToLower();

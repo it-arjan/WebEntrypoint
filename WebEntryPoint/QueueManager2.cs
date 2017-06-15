@@ -44,7 +44,7 @@ namespace WebEntryPoint.MQ
 
         private IWebserviceFactory _wsFactory;
 
-        private ITokenManager _tokenManager;
+        private ITokenCache _tokenManager;
         Stopwatch _BatchTicker = new Stopwatch();
 
         public bool ProcessMsgPerMsg { get; set; }
@@ -69,7 +69,7 @@ namespace WebEntryPoint.MQ
 
         public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q,
                                 IWebserviceFactory wsFactoryInject,
-                                ITokenManager tokenManagerInject,
+                                ITokenCache tokenManagerInject,
                                 ISocketClient socketClientInject
             )
         {

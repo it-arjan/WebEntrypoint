@@ -1,6 +1,6 @@
 ﻿namespace WebEntryPoint.ServiceCall
 {
-    public interface ITokenManager
+    public interface ITokenCache
     {
         string GetToken(string scope);
     }

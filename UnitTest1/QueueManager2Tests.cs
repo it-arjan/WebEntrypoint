@@ -80,7 +80,7 @@ namespace WebEntryPoint.MQ.Tests
         private static void MockupQueueManager(MockRepository mockRep,
                                 out Mock<IWebService> postbackMoq, out List<string> UnitTestQlist, out QueueManager2 qm)
         {
-            var tokenMoq = mockRep.Create<ITokenManager>();
+            var tokenMoq = mockRep.Create<ITokenCache>();
             tokenMoq.Setup(tm => tm.GetToken("testscope")).Returns("autotest-Token");
 
             postbackMoq = mockRep.Create<IWebService>();
@@ -92,12 +92,12 @@ namespace WebEntryPoint.MQ.Tests
 
             wsFactMock.Setup(fa => fa.Create(
                 It.IsInRange(QServiceConfig.Service1, QServiceConfig.Service7, Range.Inclusive),
-                        It.IsAny<ITokenManager>()))
+                        It.IsAny<ITokenCache>()))
                     .Returns(new FakeService(maxConcRequests: 150, maxDelaySecs: 1, failFactor:0));
 
             wsFactMock.Setup(fa => fa.Create(
                 QServiceConfig.Service8, 
-                        It.IsAny<ITokenManager>()))
+                        It.IsAny<ITokenCache>()))
                     .Returns(postbackMoq.Object);
 
             var socketClientMoq = mockRep.Create<ISocketClient>();

@@ -83,7 +83,7 @@ namespace WebEntryPoint
                 ConfigSettings.EntryQueue(),
                 ConfigSettings.Service1Queue(), ConfigSettings.Service2Queue(), ConfigSettings.Service3Queue(),
                 ConfigSettings.ExitQueue(), ConfigSettings.CmdQueue(), ConfigSettings.CmdReplyQueue(),
-                new WebserviceFactory(), new TokenManager(), new SocketClient(Helpers.ConfigSettings.SocketServerUrl())
+                new WebserviceFactory(), new TokenCache(), new SocketClient(Helpers.ConfigSettings.SocketServerUrl())
                  );
             qmThread = new Thread(queueManager.StartListening);
 

@@ -212,7 +212,7 @@
     <Compile Include="Controllers\TestController.cs" />
     <Compile Include="ServiceCall\Interface\IWebserviceFactory.cs" />
     <Compile Include="ServiceCall\Interface\IWebService.cs" />
-    <Compile Include="ServiceCall\Interface\ITokenManager.cs" />
+    <Compile Include="ServiceCall\Interface\ITokenCache.cs" />
     <Compile Include="ServiceCall\Models\CmdBag.cs" />
     <Compile Include="ServiceCall\WebserviceFactory.cs" />
     <Compile Include="ServiceCall\FakeService.cs" />
@@ -221,7 +221,7 @@
     <Compile Include="ServiceCall\PcLookupService.cs" />
     <Compile Include="ServiceCall\SimpleService.cs" />
     <Compile Include="ServiceCall\Models\ServiceCallDataBag.cs" />
-    <Compile Include="ServiceCall\TokenManager.cs" />
+    <Compile Include="ServiceCall\TokenCache.cs" />
     <Compile Include="ServiceCall\WebService.cs" />
     <Compile Include="WebSockets\interfaces\ISocketClient.cs" />
     <Compile Include="WebSockets\interfaces\ISocketServer.cs" />

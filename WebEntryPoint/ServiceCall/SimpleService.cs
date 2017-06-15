@@ -10,10 +10,10 @@ namespace WebEntryPoint.ServiceCall
     internal class SimpleService : WebService
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SimpleService), Helpers.ConfigSettings.LogLevel());
-        private ITokenManager _tokenManager;
+        private ITokenCache _tokenManager;
         public string MyScope { get; private set; }
 
-        public SimpleService(string name, string url, string scope, int maxload, ITokenManager tokenManager): base(name, url, maxload)
+        public SimpleService(string name, string url, string scope, int maxload, ITokenCache tokenManager): base(name, url, maxload)
         {
             _tokenManager = tokenManager;
             MyScope = scope;

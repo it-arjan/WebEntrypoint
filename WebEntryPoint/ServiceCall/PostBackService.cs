@@ -13,10 +13,10 @@ namespace WebEntryPoint.ServiceCall
     public class PostBackService : WebService
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PostBackService), Helpers.ConfigSettings.LogLevel());
-        private ITokenManager _tokenManager;
+        private ITokenCache _tokenManager;
         public string AuthScope { get; private set; }
 
-        public PostBackService(string postbackUrl, ITokenManager tokenManager, string scope) : base("PostBackService", postbackUrl, 5)
+        public PostBackService(string postbackUrl, ITokenCache tokenManager, string scope) : base("PostBackService", postbackUrl, 5)
         {
             _tokenManager = tokenManager;
             AuthScope = scope;

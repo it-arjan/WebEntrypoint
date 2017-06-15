@@ -4,6 +4,6 @@ namespace WebEntryPoint.ServiceCall
 {
     public interface IWebserviceFactory
     {
-        IWebService Create(QServiceConfig serviceNr, ITokenManager manager);
+        IWebService Create(QServiceConfig serviceNr, ITokenCache manager);
     }
 }
