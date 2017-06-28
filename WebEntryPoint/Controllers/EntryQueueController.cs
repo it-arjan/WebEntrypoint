@@ -35,6 +35,7 @@ namespace WebEntryPoint
             if (!string.IsNullOrEmpty(received.MessageId ))
             {
                 received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);
+                if (received.NrDrops < 1) received.NrDrops = 1;
                 webTracer.Send(received.SocketToken, "WebApi: '{0}' received, dropping it ({1}) times", received.MessageId, received.NrDrops);
                 for (int dropNr = 1; dropNr <= received.NrDrops; dropNr++)
                 {

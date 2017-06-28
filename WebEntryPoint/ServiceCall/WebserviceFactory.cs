@@ -19,7 +19,7 @@ namespace WebEntryPoint.ServiceCall
             var serviceMaxload = ConfigSettings.ServiceX_Maxload(serviceNr);
 
             if (serviceType == "fake") return new FakeService(maxConcRequests: serviceMaxload, maxDelaySecs: 5, failFactor: 3);
-            if (serviceType == "postback") return new PostBackService("provied.by.cient", tokenManager, serviceAuthScope);
+            if (serviceType == "postback") return new PostBackService("provided.by.databag", tokenManager, serviceAuthScope);
             if (serviceType == "custom")
             {
                 if (serviceName.ToLower() == "pc lookup") return new PcLookupService(serviceName, serviceUrl, serviceAuthScope);

@@ -13,26 +13,26 @@ namespace WebEntryPoint.ServiceCall
     public class PostBackService : WebService
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PostBackService), Helpers.ConfigSettings.LogLevel());
-        private ITokenCache _tokenManager;
+        private ITokenCache _tokenCache;
         public string AuthScope { get; private set; }
 
-        public PostBackService(string postbackUrl, ITokenCache tokenManager, string scope) : base("PostBackService", postbackUrl, 5)
+        public PostBackService(string postbackUrlNotUsed, ITokenCache tokenManager, string scope) : base("PostBackService", postbackUrlNotUsed, 5)
         {
-            _tokenManager = tokenManager;
+            _tokenCache = tokenManager;
             AuthScope = scope;
         }
 
         public override HttpStatusCode CallSync(DataBag data)
         {
             TryAccess(data);
-            var status = PostBackUsingEasyHttp(_tokenManager.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
+            var status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
             ReleaseAccess();
             if (status == HttpStatusCode.Unauthorized)
             {
                 // unlikely, but theoretically possible
-                _logger.Info("Unauthorized, try again once with a fresh token..");
+                _logger.Info("Postback Unauthorized, trying again once with a fresh token..");
                 TryAccess(data);
-                status = PostBackUsingEasyHttp(_tokenManager.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
+                status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, new PostbackData(data));
                 ReleaseAccess();
             }
             return status;

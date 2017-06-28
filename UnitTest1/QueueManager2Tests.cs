@@ -30,7 +30,7 @@ namespace WebEntryPoint.MQ.Tests
             qm.StartListening();
             if (qm.GetModus() != QueueManager2.ExeModus.Sequential) qm.ToggleModus();
             DropMessages(UnitTestQlist[0], 1);
-            Task.Delay(2000).Wait();  // 2 sec is long enough to run the test manually
+            Task.Delay(3000).Wait();  // 2 sec is long enough to run the test manually
             qm.StopAll();
 
             // TODO, see if it is possible to get the dropped databag parameter from the CallSync method

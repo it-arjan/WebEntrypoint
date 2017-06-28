@@ -32,27 +32,27 @@ namespace IntegrationTests
 
             var data = new WebEntryPoint.EntryQueuePostData();
             data.MessageId = messageId;
-            data.PostBackUrl = string.Format("{0}/Message/Postback", Helpers.TestSettings.FrontendUrl());
+            data.PostBackUrl = string.Format("{0}/postback/", Helpers.TestSettings.DataApiUrl());
             data.SocketToken = "";
             data.DoneToken = "";
-            // Note: Claims still contain the human values because this tokens scope is a resource scope
             data.UserName = "AutoTest";
+            data.NrDrops = 0; // should be changed to 1
 
             easyHttp.Post(apiUrl, data, "application/json");
             // fetch the messageID from postbackapi every 10 sec for 20 times
-            var getResultUrl = string.Format("{0}/message/GetPostbacks", TestSettings.FrontendUrl());
-            var _FEToken = Helpers.IdentityServer.NewSiliconClientToken(Helpers.IdentityServer.ScopeMvcFrontEnd);
+            var getResultUrl = string.Format("{0}/postback/today", Helpers.TestSettings.DataApiUrl());
+            var apiToken = Helpers.IdentityServer.NewSiliconClientToken(Helpers.IdentityServer.ScopeNancyApi);
             bool messageFound = false;
             var loops = 0;
             bool error = false;
             easyHttp = new HttpClient();
-            easyHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", _FEToken.AccessToken));
+            easyHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", apiToken.AccessToken));
             easyHttp.Request.Accept = HttpContentTypes.ApplicationJson;
 
             while (!messageFound && loops < 5 && !error)
             {
                 loops++;
-                Task.Delay(2000).Wait();
+                Task.Delay(5000).Wait();
                 easyHttp.Get(getResultUrl);
                 error = easyHttp.Response.StatusCode != System.Net.HttpStatusCode.OK;
                 messageFound = easyHttp.Response.RawText.Contains(messageId);

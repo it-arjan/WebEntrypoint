@@ -14,6 +14,7 @@ namespace IntegrationTests.Helpers
         public const string FrontendUrlKey = "frontend.url";
         public const string EntrypointUrlKey = "entrypoint.url";
         public const string AuthUrlKey = "auth.url";
+        public const string DataApiKey = "data.api.nancy";
 
         public static string SiliconClientId()
         {
@@ -35,6 +36,10 @@ namespace IntegrationTests.Helpers
         public static string EntrypointUrl()
         {
             return ConfigurationManager.AppSettings.Get(EntrypointUrlKey);
+        }
+        public static string DataApiUrl()
+        {
+            return ConfigurationManager.AppSettings.Get(DataApiKey);
         }
     }
 }
