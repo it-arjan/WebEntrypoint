@@ -41,7 +41,7 @@ namespace IntegrationTests
             easyHttp.Post(apiUrl, data, "application/json");
             // fetch the messageID from postbackapi every 10 sec for 20 times
             var getResultUrl = string.Format("{0}/postback/today", Helpers.TestSettings.DataApiUrl());
-            var apiToken = Helpers.IdentityServer.NewSiliconClientToken(Helpers.IdentityServer.ScopeNancyApi);
+            var apiToken = Helpers.IdentityServer.NewSiliconClientToken(Helpers.IdentityServer.ScopeFrontendDataApi);
             bool messageFound = false;
             var loops = 0;
             bool error = false;

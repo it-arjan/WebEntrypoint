@@ -13,7 +13,8 @@ namespace WebEntryPoint.ServiceCall
         private ITokenCache _tokenManager;
         public string MyScope { get; private set; }
 
-        public SimpleService(string name, string url, string scope, int maxload, ITokenCache tokenManager): base(name, url, maxload)
+        public SimpleService(string name, string url, string scope, int maxload, ITokenCache tokenManager): 
+            base(name, url, maxload)
         {
             _tokenManager = tokenManager;
             MyScope = scope;
@@ -31,34 +32,28 @@ namespace WebEntryPoint.ServiceCall
 
             eHttp.Request.AddExtraHeader("Authorization", auth_header);
             eHttp.Request.Accept= HttpContentTypes.ApplicationJson;
-            var exceptionMessage = string.Empty;
-            var exception = false;
+            var ReponseMsg = string.Empty;
             try
             {
                 eHttp.Get(Url + dataBag.MessageId);
- 
-                var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : eHttp.Response.StatusCode;
-                var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
+
+                var statusmsg = string.Format("Log msg: {0} returned {1}", Url, eHttp.Response.StatusCode);
                 _logger.Info(statusmsg);
 
+                dataBag.Status = eHttp.Response.StatusCode;
                 await Task.Delay(1); // quick hack to make function async
 
-                var reponseMsg = string.Empty;
-                var ReponseMsg = string.Empty;
-                if (exception) ReponseMsg = exceptionMessage;
-                else if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
+                if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
                 {
                     ReponseMsg = ParseResult(eHttp.Response.RawText);
                 }
                 else ReponseMsg = statusmsg;
 
                 dataBag.AddToLog(ReponseMsg);
-                dataBag.Status = resultStatus;
             }
             catch (System.Net.WebException ex)
             {
-                exception = true;
-                exceptionMessage = ex.Message;
+                ReponseMsg = ex.Message;
             }
             finally
             {

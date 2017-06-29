@@ -20,12 +20,9 @@ namespace WebEntryPoint.ServiceCall
 
             if (serviceType == "fake") return new FakeService(maxConcRequests: serviceMaxload, maxDelaySecs: 5, failFactor: 3);
             if (serviceType == "postback") return new PostBackService("provided.by.databag", tokenManager, serviceAuthScope);
-            if (serviceType == "custom")
-            {
-                if (serviceName.ToLower() == "pc lookup") return new PcLookupService(serviceName, serviceUrl, serviceAuthScope);
-                else throw new Exception(serviceName + ": Unknown Custom service");
-            }
-            else return new SimpleService(serviceName, serviceUrl, serviceAuthScope, serviceMaxload, tokenManager);
+            if (serviceType == "pclookup") return new PcLookupService(serviceName, serviceUrl, serviceAuthScope);
+            if (serviceType == "simple") return new SimpleService(serviceName, serviceUrl, serviceAuthScope, serviceMaxload, tokenManager);
+            else throw new Exception(serviceName + ": Unknown service type ->" + serviceType);
         }
     }
 }
