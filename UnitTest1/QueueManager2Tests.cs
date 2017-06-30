@@ -50,7 +50,7 @@ namespace WebEntryPoint.MQ.Tests
             Assert.IsTrue(qm.GetModus() == QueueManager2.ExeModus.Paralell);
 
             DropMessages(UnitTestQlist[0], 30);
-            Task.Delay(20000).Wait();  // 20 sec is long enough to run the test manually
+            Task.Delay(20000).Wait();  // 20 sec is long enough to process 30 mesages
             qm.StopAll();
 
             postbackMoq.Verify(pb => pb.CallSync(It.IsAny<DataBag>()), Times.Exactly(30));

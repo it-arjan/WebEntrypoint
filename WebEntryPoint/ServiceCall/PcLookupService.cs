@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using NLogWrapper;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -15,18 +16,20 @@ namespace WebEntryPoint.ServiceCall
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PcLookupService), Helpers.ConfigSettings.LogLevel());
         public string ApiKey { get; private set; }
-        private List<Tuple<string, string>> postalsLookedUp;
+        private List<PostalCodeLookup> postalsDone;
+        DateTime LastPostalsDoneGroom;
         public PcLookupService(string name, string serviceUrl, string apiKey): base("Postal Code Lookup", serviceUrl, 3)
         {
             ApiKey = apiKey;
-            postalsLookedUp = new List<Tuple<string, string>>();
+            postalsDone = new List<PostalCodeLookup>();
+            LastPostalsDoneGroom = DateTime.Now.AddDays(-1);
         }
 
         public async override Task<DataBag> CallAsync(DataBag data)
         {
             var postalPart = string.Empty;
             var housenrPart = string.Empty;
-            var isPostalCode = ExtractPostalCode(data.MessageId, out postalPart, out housenrPart);
+            var postalLookup = ExtractPostalCode(data.AspSessionId, data.MessageId);
 
             _logger.Info("Making get request to '{0}'", Url);
 
@@ -35,9 +38,9 @@ namespace WebEntryPoint.ServiceCall
 
             HttpStatusCode resultStatus = HttpStatusCode.PreconditionFailed;
 
-            if (isPostalCode)
+            if (postalLookup != null)
             {
-                if (!PostalAlreadyLookedBefore(data.AspSessionId, postalPart, housenrPart))
+                if (!PostalAlreadyLookedBefore(postalLookup))
                 {
                     var eHttp = new EasyHttp.Http.HttpClient();
                     eHttp.Request.AddExtraHeader("X-Api-Key", ApiKey);
@@ -47,7 +50,7 @@ namespace WebEntryPoint.ServiceCall
                     var exception = false;
                     try
                     {
-                        var finalUrl = string.Format("{0}/?postcode={1}&number={2}", Url, postalPart, housenrPart);
+                        var finalUrl = string.Format("{0}/?postcode={1}&number={2}", Url, postalLookup.postal, postalLookup.housenr);
                         eHttp.Get(finalUrl);
                         ReponseMsg = ParseJsonResult(eHttp.Response.RawText);
                     }
@@ -65,12 +68,14 @@ namespace WebEntryPoint.ServiceCall
                 }
                 else //postal already looked up
                 {
-                    ReponseMsg = "This postal is already looked up recently by this asp session id";
+                    ReponseMsg = "This postal is already looked up today by this asp session id";
+                    resultStatus = HttpStatusCode.OK;
                 }
             }
             else
             {
                 ReponseMsg = string.Format("{0} is not a postal code + housenr", data.MessageId);
+                resultStatus = HttpStatusCode.OK;
             }
             data.AddToLog(ReponseMsg);
             data.Status = resultStatus; 
@@ -80,39 +85,57 @@ namespace WebEntryPoint.ServiceCall
         private string ParseJsonResult(string json)
         {
             string result = null;
-            dynamic jsonObj = JObject.Parse(json);
-            var address = jsonObj["_embedded"]["addresses"][0];
+            var jsonObj = JObject.Parse(json);
+            dynamic dyn = jsonObj["_embedded"]["addresses"][0];
             var ad = new AddressData
             {
-                Street = address.street,
-                Number = address.number,
-                City = address.city.label,
-                Surface = address.surface,
-                Purpose = address.purpose,
-                Year = address.year
+                Street = dyn.street,
+                Number = dyn.number,
+                City = dyn.city.label,
+                Surface = dyn.surface,
+                Purpose = dyn.purpose,
+                Year = dyn.year
             };
             result = string.Format("{0} {1}, {2}. Surface={3}m2. The property was built in {5} and has a '{4}'.",
                                     ad.Street, ad.Number, ad.City, ad.Surface, ad.Purpose, ad.Year);
             return result;
         }
 
-        private bool PostalAlreadyLookedBefore(string aspSessionId, string postalPart, string housenrPart)
+        private bool PostalAlreadyLookedBefore(PostalCodeLookup lookup)
         {
-            return false;
-            var check = new Tuple<string, string>(item1: postalPart, item2: housenrPart);
-
-            return postalsLookedUp.Contains(check);
+            GroomPostalsDone();
+            var result = postalsDone.Where(p => p.date == DateTime.Now.Date
+                                                && p.aspSessionId == lookup.aspSessionId
+                                                && p.postal == lookup.postal
+                                                && p.housenr == lookup.housenr).Any();
+            if (!result) postalsDone.Add(lookup);
+            return result;
         }
 
+        private void GroomPostalsDone()
+        {
+            if (LastPostalsDoneGroom < DateTime.Now.Date)
+            {
+                var oldOnes = postalsDone.Where(p => p.date < DateTime.Now.Date).ToList(); ;
+                oldOnes.ForEach(p => postalsDone.Remove(p));
+                LastPostalsDoneGroom = DateTime.Now.Date;
+            }
+        }
 
-        private bool ExtractPostalCode(string messageId, out string postal, out string housenr)
+        private PostalCodeLookup ExtractPostalCode(string sessionId, string messageId)
         {
             var workItem = messageId.Trim().ToUpper();
-            bool result = Regex.IsMatch(workItem, Helpers.RegEx.isPostalCode);
-            var match = Regex.Match(workItem, Helpers.RegEx.PostalGetPostal);
-            postal = match.Value;
-            match = Regex.Match(workItem, Helpers.RegEx.PostalGetHousenr);
-            housenr = match.Value;
+            PostalCodeLookup result = null;
+            if (Regex.IsMatch(workItem, Helpers.RegEx.isPostalCode))
+            {
+                result = new PostalCodeLookup();
+                result.date = DateTime.Now.Date;
+                result.aspSessionId = sessionId;
+                var match = Regex.Match(workItem, Helpers.RegEx.PostalGetPostal);
+                result.postal= match.Value;
+                match = Regex.Match(workItem, Helpers.RegEx.PostalGetHousenr);
+                result.housenr = match.Value;
+            }
             return result;
             
         }
@@ -179,9 +202,11 @@ namespace WebEntryPoint.ServiceCall
         public string Year { get; set; }
     }
 
-    public class PostalCodeApiCity
+    public class PostalCodeLookup
     {
-        public string Id { get; set; }
-        public string Label { get; set; }
+        public DateTime date { get; set; }
+        public string aspSessionId { get; set; }
+        public string postal { get; set; }
+        public string housenr { get; set; }
     }
 }

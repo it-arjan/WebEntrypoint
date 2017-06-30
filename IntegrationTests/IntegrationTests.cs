@@ -36,7 +36,7 @@ namespace IntegrationTests
             data.SocketToken = "";
             data.DoneToken = "";
             data.UserName = "AutoTest";
-            data.NrDrops = 0; // should be changed to 1
+            data.NrDrops = 0; // should default to 1
 
             easyHttp.Post(apiUrl, data, "application/json");
             // fetch the messageID from postbackapi every 10 sec for 20 times
