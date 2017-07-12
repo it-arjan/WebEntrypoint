@@ -20,6 +20,7 @@ namespace WebEntryPoint.Helpers
         public const string HostnameKey = "hostname";
         public const string PortKey = "port";
         public const string AuthServerKey = "authserver";
+        public const string DataApiKey = "frontend.data.api";
 
         public const string AllowedSocketListenerCsvKey = "websocket.listeners.csv";
         public const string SocketPortKey = "websocket.port";
@@ -85,6 +86,11 @@ namespace WebEntryPoint.Helpers
         public static string AuthServer()
         {
             return ConfigurationManager.AppSettings.Get(AuthServerKey);
+        }
+
+        public static string DataApiUrl()
+        {
+            return string.Format("{0}://{1}/", Scheme(), ConfigurationManager.AppSettings.Get(DataApiKey));
         }
 
         public static string AllowedSocketListenerCsv()

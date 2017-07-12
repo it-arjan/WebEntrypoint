@@ -189,6 +189,7 @@
     <Compile Include="Helpers\IdSrv3.cs" />
     <Compile Include="Helpers\ConfigSettings.cs" />
     <Compile Include="Helpers\RegEx.cs" />
+    <Compile Include="Helpers\RemoteRequestLogger.cs" />
     <Compile Include="Helpers\Security.cs" />
     <Compile Include="Helpers\SettingsChecker.cs" />
     <Compile Include="HttpHost.cs" />
@@ -210,6 +211,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Controllers\TestController.cs" />
+    <Compile Include="Helpers\Models\RequestLogEntry.cs" />
     <Compile Include="ServiceCall\Interface\IWebserviceFactory.cs" />
     <Compile Include="ServiceCall\Interface\IWebService.cs" />
     <Compile Include="ServiceCall\Interface\ITokenCache.cs" />

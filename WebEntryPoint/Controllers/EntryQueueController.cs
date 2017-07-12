@@ -16,6 +16,7 @@ using System.IO;
 using System.Runtime.Serialization;
 using NLogWrapper;
 using Newtonsoft.Json;
+using WebEntryPoint.Helpers;
 
 namespace WebEntryPoint
 {
@@ -31,7 +32,8 @@ namespace WebEntryPoint
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             string resultMsg = string.Empty;
-            var webTracer = new SocketClient(Helpers.ConfigSettings.SocketServerUrl()); 
+            RemoteRequestLogger.Log(received.UserName, received.AspSessionId, "ip = todo", "application/json", "Post", "/EntryQueue");
+            var webTracer = new SocketClient(Helpers.ConfigSettings.SocketServerUrl());
             if (!string.IsNullOrEmpty(received.MessageId ))
             {
                 received.MessageId = Regex.Replace(received.MessageId, Helpers.RegEx.InvalidMessageIdChars, string.Empty);

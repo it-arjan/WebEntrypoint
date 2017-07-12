@@ -12,6 +12,7 @@ namespace WebEntryPoint.Helpers
 
         public const string ScopeMvcFrontEnd = "mvc-frontend-silicon";
         public const string ScopeEntryQueueApi = "entry-queue-api";
+        public const string ScopeFrontendDataApi = "frontend-data-api";
         public const string ScopeNancyApi = "nancy-api";
         public const string ScopeServiceStackApi = "servicestack-api";
         public const string ScopeWcfService = "wcf-service";
