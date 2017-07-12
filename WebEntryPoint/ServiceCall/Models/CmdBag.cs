@@ -21,7 +21,10 @@ namespace WebEntryPoint.ServiceCall
     public class CmdBag
     {
         public CmdBag()
-        { }
+        {
+            Status = CmdStatus.Ok;
+        }
+
         public CmdBag(CmdBag clone)
         {
             CmdType = clone.CmdType;
@@ -33,6 +36,7 @@ namespace WebEntryPoint.ServiceCall
             Message = clone.Message;
             SocketToken = clone.SocketToken;
         }
+
         public CmdType CmdType { get; set; }
         public CmdStatus Status { get; set; }
 
@@ -44,6 +48,7 @@ namespace WebEntryPoint.ServiceCall
         public string Message { get; set; }
 
         public string SocketToken { get; set; }
+        
     }
 
 }

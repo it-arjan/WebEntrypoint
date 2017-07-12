@@ -32,7 +32,7 @@ namespace WebEntryPoint
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             string resultMsg = string.Empty;
-            RemoteRequestLogger.Log(received.UserName, received.AspSessionId, "ip = todo", "application/json", "Post", "/EntryQueue");
+            RemoteRequestLogger.Log(received.UserName, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "Post", "/EntryQueue");
             var webTracer = new SocketClient(Helpers.ConfigSettings.SocketServerUrl());
             if (!string.IsNullOrEmpty(received.MessageId ))
             {
@@ -42,16 +42,8 @@ namespace WebEntryPoint
                 for (int dropNr = 1; dropNr <= received.NrDrops; dropNr++)
                 {
                     var msgId = received.NrDrops ==1? received.MessageId: string.Format("{0}-{1}", dropNr, received.MessageId);
-                    var dataBag = new DataBag();
-                    dataBag.Label = received.MessageId + " - " + DateTime.Now.ToShortTimeString();
-                    dataBag.MessageId = msgId;
-                    dataBag.PostBackUrl = received.PostBackUrl;
-                    dataBag.socketToken = received.SocketToken;
-                    dataBag.notificationToken = received.NotificationToken;
-                    dataBag.doneToken = received.DoneToken;
-                    dataBag.AspSessionId = received.AspSessionId;
-                    dataBag.UserName = received.UserName;
-                    dataBag.Started = DateTime.Now;
+                    var dataBag = new DataBag(received);
+            
 
                     var msg = new System.Messaging.Message();
                     msg.Body = dataBag;

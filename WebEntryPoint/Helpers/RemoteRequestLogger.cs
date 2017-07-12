@@ -14,11 +14,11 @@ namespace WebEntryPoint.Helpers
     public static class RemoteRequestLogger
     {
         private static ILogger _logger = LogManager.CreateLogger(typeof(RemoteRequestLogger), Helpers.ConfigSettings.LogLevel());
-        public static void Log(string userName, string aspSessionId, string fromIp, string contentype, string method, string path)
+        public static void Log(string userName, string aspSessionId, string apiFeedToken, string fromIp, string contentype, string method, string path)
         {
             var logEntry = CreateApiLogEntryWithRequestData(userName, aspSessionId, fromIp, contentype, method, path);
             string url = string.Format("{0}/requestlog", Helpers.ConfigSettings.DataApiUrl());
-            Post(url, JsonConvert.SerializeObject(logEntry));
+            Post(url, apiFeedToken, JsonConvert.SerializeObject(logEntry));
 
         }
         private static Models.RequestLogEntry CreateApiLogEntryWithRequestData(string userName, string aspSessionId, string fromIp, string contentype, string method, string path)
@@ -34,7 +34,7 @@ namespace WebEntryPoint.Helpers
                 AspSessionId = aspSessionId
             };
         }
-        private static void Post(string url, string json)
+        private static void Post(string url, string apiFeedToken, string json)
         {
             try
             {
@@ -43,6 +43,8 @@ namespace WebEntryPoint.Helpers
                 // todo try to cache it in application["tokencache"] 
                 var token = new ServiceCall.TokenCache().GetToken(Helpers.IdSrv3.ScopeFrontendDataApi);
                 eHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", token));
+                eHttp.Request.AddExtraHeader("X-socketToken", apiFeedToken);
+
                 eHttp.Post(url, json, HttpContentTypes.ApplicationJson);
                 if (eHttp.Response.StatusCode != System.Net.HttpStatusCode.OK)
                     throw new HttpException(eHttp.Response.StatusCode, eHttp.Response.StatusDescription);

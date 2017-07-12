@@ -48,20 +48,23 @@ namespace WebEntryPoint
             _cmdResult_HOT = new CmdBag(bag);
         }
 
-        [Route("api/CmdQueue/{socketToken}/{cmdType}")]
-        public IHttpActionResult Get(string socketToken, string cmdType)
-        {
-            // can be GetModus GetServiceConfig
-            _logger.Debug("GET, Url data received: {0}, {1}", socketToken, cmdType);
-            var bag = new CmdBag();
-            bag.CmdType= StringToCmdType(cmdType);
-            bag.SocketToken = socketToken;
+        //[Route("api/CmdQueue/{socketToken}/{apiFeedTocken}/{user}/{aspSessionId}{cmdType}")]
+        //public IHttpActionResult Get(string socketToken, string apiFeedTocken, string aspSessionId, string user, string cmdType)
+        //{
+        //    can be GetModus GetServiceConfig
+        //    _logger.Debug("GET, Url data received: {0}, {1}", socketToken, cmdType);
+        //    RemoteRequestLogger.Log(user, aspSessionId, apiFeedTocken, "todo", "application/json", "Post", "/EntryQueue");
+        //    var bag = new CmdBag();
+        //    bag.CmdType = StringToCmdType(cmdType);
+        //    bag.SocketToken = socketToken;
 
-            CmdBag resultBag = DropCmdandWaitForAnswer(bag);
+        //    CmdBag resultBag = DropCmdandWaitForAnswer(bag);
 
-            return Json(new { Message = resultBag.Message, CmdResult = resultBag.CmdResult });
-        }
-        //// COSR is enabled in  HttpHost, so we don;t need to manually enable options
+        //    return Json(new { Message = resultBag.Message, CmdResult = resultBag.CmdResult });
+        //}
+
+        // This is how you manually enable CORS
+        // but COSR is enabled in  HttpHost, so we don't use it
         //public IHttpActionResult Options()
         //{
         //    return Json(new { message = "" });
@@ -70,6 +73,7 @@ namespace WebEntryPoint
         {
             _logger.Debug("POST, Data received: {0}", JsonConvert.SerializeObject(received));
 
+            RemoteRequestLogger.Log(received.User, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "POST", "/CmdQueue");
 
             var cmdBag = ProcessPostedData(received); 
             CmdBag resultBag;
@@ -84,7 +88,8 @@ namespace WebEntryPoint
 
         private CmdBag DropCmdandWaitForAnswer(CmdBag cmdBag)
         {
-            CmdBag resultBag = null;
+            CmdBag resultBag = new CmdBag();
+            resultBag.Message = "Error";
             lock (_lockHOTResult)
             {
                 var msg = new System.Messaging.Message();
@@ -94,9 +99,14 @@ namespace WebEntryPoint
                 _cmdReplyQueue.Q.BeginReceive();
 
                 _logger.Debug("Busy Waiting for command result");
-                while (_cmdResult_HOT == null) Task.Delay(100).Wait();
+                var rounds = 0;
+                while (_cmdResult_HOT == null || rounds > 10)
+                {
+                    Task.Delay(25).Wait();
+                    rounds++;
+                }
 
-                resultBag = _cmdResult_HOT;
+                resultBag = _cmdResult_HOT ?? resultBag;
                 _cmdResult_HOT = null;
             }
             return resultBag;
@@ -126,9 +136,9 @@ namespace WebEntryPoint
 
             if (cmdBag.CmdType == CmdType.SetServiceConfig)
             {
-                QServiceConfig s1 = (QServiceConfig)service1Nr;
-                QServiceConfig s2 = (QServiceConfig)service2Nr;
-                QServiceConfig s3 = (QServiceConfig)service3Nr;
+                QServiceConfig s1 = (QServiceConfig) service1Nr;
+                QServiceConfig s2 = (QServiceConfig) service2Nr;
+                QServiceConfig s3 = (QServiceConfig) service3Nr;
                 if (s1 > 0 && s2 > 0 && s3 > 0 &&
                     s1 < QServiceConfig.Enum_End && s2 < QServiceConfig.Enum_End && s3 < QServiceConfig.Enum_End)
                 {

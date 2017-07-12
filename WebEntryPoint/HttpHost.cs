@@ -26,7 +26,7 @@ namespace WebEntryPoint
             HttpConfiguration config = new HttpConfiguration();
             string urlCsv = AllowedCorsUrls();
 
-            var corsAttr = new EnableCorsAttribute(urlCsv, "*", "*");
+            var corsAttr = new EnableCorsAttribute("*", "*", "*");
             config.EnableCors(corsAttr);
 
             config.MapHttpAttributeRoutes();

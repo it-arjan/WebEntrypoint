@@ -183,7 +183,6 @@
   <ItemGroup>
     <Compile Include="Controllers\Models\CmdPostData.cs" />
     <Compile Include="Controllers\Models\EntryQueuePostData.cs" />
-    <Compile Include="Controllers\WebserviceSettingsController.cs" />
     <Compile Include="Controllers\CmdQueueController.cs" />
     <Compile Include="Controllers\EntryQueueController.cs" />
     <Compile Include="Helpers\IdSrv3.cs" />

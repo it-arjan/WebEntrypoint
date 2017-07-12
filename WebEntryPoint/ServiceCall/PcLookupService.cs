@@ -96,7 +96,7 @@ namespace WebEntryPoint.ServiceCall
                 Purpose = dyn.purpose,
                 Year = dyn.year
             };
-            result = string.Format("{0} {1}, {2}. Surface={3}m2. The property was built in {5} and has a '{4}'.",
+            result = string.Format("{0} {1}, {2}. Surface={3}m2, year {5}. This address has status '{4}'.",
                                     ad.Street, ad.Number, ad.City, ad.Surface, ad.Purpose, ad.Year);
             return result;
         }

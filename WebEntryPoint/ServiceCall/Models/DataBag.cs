@@ -27,6 +27,24 @@ namespace WebEntryPoint.ServiceCall
             CurrentPhase = ProcessPhase.Service1;
         }
 
+        public DataBag(EntryQueuePostData transfer)
+        {
+            Label = transfer.MessageId + " - " + DateTime.Now.ToShortTimeString();
+            MessageId = transfer.MessageId;
+            PostBackUrl = transfer.PostBackUrl;
+            socketToken = transfer.SocketToken;
+            ApiFeedToken = transfer.ApiFeedToken;
+            notificationToken = transfer.NotificationToken;
+            doneToken = transfer.DoneToken;
+            AspSessionId = transfer.AspSessionId;
+            UserName = transfer.UserName;
+
+            TryCount = 0;
+            Status = HttpStatusCode.OK;
+            CurrentPhase = ProcessPhase.Service1;
+            Started = DateTime.Now;
+        }
+
         public DateTime Started { get; set; }
         public string Duration { get; set; }
         public string Content { get; set; }
@@ -36,6 +54,7 @@ namespace WebEntryPoint.ServiceCall
 
         public string notificationToken { get; set; }
         public string socketToken { get; set; }
+        public string ApiFeedToken { get; set; }
         public string doneToken { get; set; }
         public string AspSessionId{ get; set; }
         
