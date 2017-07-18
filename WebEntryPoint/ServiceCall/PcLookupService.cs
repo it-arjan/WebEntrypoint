@@ -86,18 +86,25 @@ namespace WebEntryPoint.ServiceCall
         {
             string result = null;
             var jsonObj = JObject.Parse(json);
-            dynamic dyn = jsonObj["_embedded"]["addresses"][0];
-            var ad = new AddressData
+            if (jsonObj["_embedded"]["addresses"].Any())
             {
-                Street = dyn.street,
-                Number = dyn.number,
-                City = dyn.city.label,
-                Surface = dyn.surface,
-                Purpose = dyn.purpose,
-                Year = dyn.year
-            };
-            result = string.Format("{0} {1}, {2}. Surface={3}m2, year {5}. This address has status '{4}'.",
-                                    ad.Street, ad.Number, ad.City, ad.Surface, ad.Purpose, ad.Year);
+                dynamic dyn = jsonObj["_embedded"]["addresses"][0];
+                var ad = new AddressData
+                {
+                    Street = dyn.street,
+                    Number = dyn.number,
+                    City = dyn.city.label,
+                    Surface = dyn.surface,
+                    Purpose = dyn.purpose,
+                    Year = dyn.year
+                };
+                result = string.Format("{0} {1}, {2}. Surface={3}m2, year {5}. This address has status '{4}'.",
+                                        ad.Street, ad.Number, ad.City, ad.Surface, ad.Purpose, ad.Year);
+            }
+            else
+            {
+                result = "address not found.";
+            }
             return result;
         }
 
