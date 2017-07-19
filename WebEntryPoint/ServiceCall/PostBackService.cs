@@ -7,6 +7,7 @@ using NLogWrapper;
 using System.Net;
 using Newtonsoft.Json;
 using EasyHttp.Http;
+using WebEntryPoint.Helpers;
 
 namespace WebEntryPoint.ServiceCall
 {
@@ -25,6 +26,7 @@ namespace WebEntryPoint.ServiceCall
         public override HttpStatusCode CallSync(DataBag data)
         {
             TryAccess(data);
+            RemoteRequestLogger.Log(data.UserName, data.AspSessionId, data.ApiFeedToken, "todo", "application/json", "POST", "/Postbackdatas");
             var status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, data.ApiFeedToken, new PostbackData(data));
             ReleaseAccess();
             if (status == HttpStatusCode.Unauthorized)
