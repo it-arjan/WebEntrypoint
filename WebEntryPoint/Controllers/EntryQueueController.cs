@@ -32,7 +32,10 @@ namespace WebEntryPoint
         {
             _logger.Debug("Data received: {0}", JsonConvert.SerializeObject(received));
             string resultMsg = string.Empty;
-            RemoteRequestLogger.Log(received.UserName, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "Post", "/EntryQueue");
+            if (received.LogDropRequest)
+            {
+                RemoteRequestLogger.Log(received.UserName, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "Post", "/EntryQueue");
+            }
             var webTracer = new SocketClient(Helpers.ConfigSettings.SocketServerUrl());
             if (!string.IsNullOrEmpty(received.MessageId ))
             {

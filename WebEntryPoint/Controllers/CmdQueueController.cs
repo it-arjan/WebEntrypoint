@@ -72,9 +72,10 @@ namespace WebEntryPoint
         public IHttpActionResult Post(CmdPostData received)
         {
             _logger.Debug("POST, Data received: {0}", JsonConvert.SerializeObject(received));
-
-            RemoteRequestLogger.Log(received.User, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "POST", "/CmdQueue");
-
+            if (received.LogDropRequest)
+            {
+                RemoteRequestLogger.Log(received.User, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "POST", "/CmdQueue");
+            }
             var cmdBag = ProcessPostedData(received); 
             CmdBag resultBag;
             if (cmdBag != null)

@@ -17,17 +17,14 @@ namespace WebEntryPoint.Helpers
         public static void Log(string userName, string aspSessionId, string apiFeedToken, string fromIp, string contentype, string method, string path)
         {
             var acccess_token = new ServiceCall.TokenCache().GetToken(Helpers.IdSrv3.ScopeFrontendDataApi);
-            if (!SessionIdOnIgnoreList(aspSessionId, apiFeedToken, acccess_token))
-            {
-                var logEntry = CreateApiLogEntryWithRequestData(userName, aspSessionId, fromIp, contentype, method, path);
-                string url = string.Format("{0}/requestlog", Helpers.ConfigSettings.DataApiUrl());
-                Post(url, apiFeedToken, acccess_token, JsonConvert.SerializeObject(logEntry));
-            }
-
+            var logEntry = CreateApiLogEntryWithRequestData(userName, aspSessionId, fromIp, contentype, method, path);
+            string url = string.Format("{0}/requestlog", Helpers.ConfigSettings.DataApiUrl());
+            Post(url, apiFeedToken, acccess_token, JsonConvert.SerializeObject(logEntry));
         }
 
         private static bool SessionIdOnIgnoreList(string aspSessionId, string apiFeedToken, string acccess_token)
         {
+            //OLD this is now in the posted data as bool
             string url = string.Format("{0}/ipsessionid/exists/{1}", Helpers.ConfigSettings.DataApiUrl(), aspSessionId);
             var result = Get(url, apiFeedToken, acccess_token);
             return result.ToLower().Contains("true");

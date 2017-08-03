@@ -25,6 +25,7 @@ namespace WebEntryPoint.ServiceCall
             TryCount = 0;
             Status = HttpStatusCode.OK;
             CurrentPhase = ProcessPhase.Service1;
+            LogRequests = true;
         }
 
         public DataBag(EntryQueuePostData transfer)
@@ -38,7 +39,7 @@ namespace WebEntryPoint.ServiceCall
             doneToken = transfer.DoneToken;
             AspSessionId = transfer.AspSessionId;
             UserName = transfer.UserName;
-
+            LogRequests = transfer.LogDropRequest;
             TryCount = 0;
             Status = HttpStatusCode.OK;
             CurrentPhase = ProcessPhase.Service1;
@@ -60,6 +61,7 @@ namespace WebEntryPoint.ServiceCall
         
         public string PostBackUrl { get; set; }
         public string UserName { get; set; }
+        public bool LogRequests { get; set; }
 
         public string SiliconToken { get; set; }
 

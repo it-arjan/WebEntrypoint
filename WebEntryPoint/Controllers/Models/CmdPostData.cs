@@ -12,5 +12,6 @@ namespace WebEntryPoint
         public string AspSessionId { get; set; }
         public string ApiFeedToken { get; set; }
         public string User { get; set; }
+        public bool LogDropRequest { get; set; }
     }
 }
