@@ -15,12 +15,12 @@ namespace WebEntryPoint.WebSockets
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.ConfigSettings.LogLevel());
         private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.ConfigSettings.LogLevel());
         private WebSocketServer _socketServer;
-        private List<IWebSocketConnection> _sendList;
+        private List<IWebSocketConnection> _listenersWithOpenConnections;
         private string[] _listeningHostnamesList;
 
         public SocketServer()
         {
-            _sendList = new List<IWebSocketConnection>();
+            _listenersWithOpenConnections = new List<IWebSocketConnection>();
         }
 
         public void Start(string url)
@@ -46,7 +46,7 @@ namespace WebEntryPoint.WebSockets
                     _logger.Trace("Socket Opened by Client: {0}", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
-                        _sendList.Add(socket); 
+                        _listenersWithOpenConnections.Add(socket); 
                         _logger.Debug("Client '{0}' added to sendlist", socket.ConnectionInfo.Origin);
                     }
                 };
@@ -56,7 +56,7 @@ namespace WebEntryPoint.WebSockets
                     _logger.Trace("Socket CLOSED by Client originating from: '{0}'", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
-                        _sendList.Remove(socket);
+                        _listenersWithOpenConnections.Remove(socket);
                     }
                 };
 
@@ -64,14 +64,14 @@ namespace WebEntryPoint.WebSockets
                 {
                     _logger.Trace("Message: '{0}'", message);
                     _logger.Debug("SendList: '{0}'", Helpers.ConfigSettings.AllowedSocketListenerCsv());
-                    if (!_sendList.Any())
+                    if (!_listenersWithOpenConnections.Any())
                     {
                         if (!InternalRequest(socket.ConnectionInfo.Host))
                             _logger.Warn("We have a message to send, but nobody to send it to!", socket.ConnectionInfo.Host);
                     }
                     else
                     {
-                        _sendList.ForEach(s => s.Send(message));
+                        _listenersWithOpenConnections.ForEach(s => s.Send(message));
                     }
                 };
             });
