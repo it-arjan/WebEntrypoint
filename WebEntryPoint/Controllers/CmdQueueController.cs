@@ -34,7 +34,6 @@ namespace WebEntryPoint
         {
             _cmdQueue = new MSMQWrapper(Helpers.ConfigSettings.CmdQueue());
             _cmdQueue.SetFormatters(typeof(CmdBag));
-            //_cmdQueue.AddHandler(QueueCmdHandler);
 
             _cmdReplyQueue = new MSMQWrapper(Helpers.ConfigSettings.CmdReplyQueue());
             _cmdReplyQueue.SetFormatters(typeof(CmdBag));
@@ -48,23 +47,7 @@ namespace WebEntryPoint
             _cmdResult_HOT = new CmdBag(bag);
         }
 
-        //[Route("api/CmdQueue/{socketToken}/{apiFeedTocken}/{user}/{aspSessionId}{cmdType}")]
-        //public IHttpActionResult Get(string socketToken, string apiFeedTocken, string aspSessionId, string user, string cmdType)
-        //{
-        //    can be GetModus GetServiceConfig
-        //    _logger.Debug("GET, Url data received: {0}, {1}", socketToken, cmdType);
-        //    RemoteRequestLogger.Log(user, aspSessionId, apiFeedTocken, "todo", "application/json", "Post", "/EntryQueue");
-        //    var bag = new CmdBag();
-        //    bag.CmdType = StringToCmdType(cmdType);
-        //    bag.SocketToken = socketToken;
-
-        //    CmdBag resultBag = DropCmdandWaitForAnswer(bag);
-
-        //    return Json(new { Message = resultBag.Message, CmdResult = resultBag.CmdResult });
-        //}
-
-        // This is how you manually enable CORS
-        // but COSR is enabled in  HttpHost, so we don't use it
+         // This is how you would manually enable CORS
         //public IHttpActionResult Options()
         //{
         //    return Json(new { message = "" });

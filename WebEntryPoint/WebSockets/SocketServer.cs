@@ -15,21 +15,21 @@ namespace WebEntryPoint.WebSockets
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.ConfigSettings.LogLevel());
         private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.ConfigSettings.LogLevel());
         private WebSocketServer _socketServer;
-        private List<IWebSocketConnection> LegalSocketList;
-        private string[] _listenList;
+        private List<IWebSocketConnection> _sendList;
+        private string[] _listeningHostnamesList;
 
         public SocketServer()
         {
-            LegalSocketList = new List<IWebSocketConnection>();
+            _sendList = new List<IWebSocketConnection>();
         }
 
         public void Start(string url)
         {
             _logger.Info("Starting on ip:port {0}", url);
             _socketServer = new WebSocketServer(url);
-            _listenList = Helpers.ConfigSettings.AllowedSocketListenerCsv().Split(',');
+            _listeningHostnamesList = Helpers.ConfigSettings.AllowedSocketListenerCsv().Split(',');
             _logger.Info("Listening hostnames found in '{0}'", Helpers.ConfigSettings.AllowedSocketListenerCsvKey);
-            foreach (var hostname in _listenList)
+            foreach (var hostname in _listeningHostnamesList)
             {
                 _logger.Info("-{0}", hostname);
             }
@@ -46,12 +46,8 @@ namespace WebEntryPoint.WebSockets
                     _logger.Trace("Socket Opened by Client: {0}", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
-                        LegalSocketList.Add(socket); 
+                        _sendList.Add(socket); 
                         _logger.Debug("Client '{0}' added to sendlist", socket.ConnectionInfo.Origin);
-                    }
-                    else
-                    {
-                        _logger.Debug("Client '{0}' *not* added to sendlist", socket.ConnectionInfo.Origin);
                     }
                 };
 
@@ -60,7 +56,7 @@ namespace WebEntryPoint.WebSockets
                     _logger.Trace("Socket CLOSED by Client originating from: '{0}'", socket.ConnectionInfo.Origin);
                     if (IsListeningSocket(socket))
                     {
-                        LegalSocketList.Remove(socket);
+                        _sendList.Remove(socket);
                     }
                 };
 
@@ -68,17 +64,24 @@ namespace WebEntryPoint.WebSockets
                 {
                     _logger.Trace("Message: '{0}'", message);
                     _logger.Debug("SendList: '{0}'", Helpers.ConfigSettings.AllowedSocketListenerCsv());
-                    if (!LegalSocketList.Any() 
-                        && socket.ConnectionInfo.Host != null
-                        && !socket.ConnectionInfo.Host.Contains(Helpers.ConfigSettings.Hostname())
-                        )
+                    if (!_sendList.Any())
                     {
-                        _logger.Warn("Request from {0} not allowed, this is specified in web.config", socket.ConnectionInfo.Host);
+                        if (!InternalRequest(socket.ConnectionInfo.Host))
+                            _logger.Warn("We have a message to send, but nobody to send it to!", socket.ConnectionInfo.Host);
                     }
-                    LegalSocketList.ForEach(s => s.Send(message));
+                    else
+                    {
+                        _sendList.ForEach(s => s.Send(message));
+                    }
                 };
             });
         }
+
+        private bool InternalRequest(string hostName)
+        {
+            return hostName != null && hostName.Contains(Helpers.ConfigSettings.Hostname());
+        }
+
         public void WireFleckLogging()
         {
             FleckLog.Level = LogLevel.Error;
@@ -112,7 +115,7 @@ namespace WebEntryPoint.WebSockets
         }
         private bool IsListeningSocket(IWebSocketConnection socket)
         {
-            foreach (var hostname in _listenList)
+            foreach (var hostname in _listeningHostnamesList)
             {
                 if (socket.ConnectionInfo.Origin != null && socket.ConnectionInfo.Origin.ToLower().Contains(hostname.ToLower().Trim()))
                     return true;
