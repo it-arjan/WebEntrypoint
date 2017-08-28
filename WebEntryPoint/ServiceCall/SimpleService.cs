@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using NLogWrapper;
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -11,6 +12,7 @@ namespace WebEntryPoint.ServiceCall
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SimpleService), Helpers.ConfigSettings.LogLevel());
         private ITokenCache _tokenManager;
+        private static System.Net.Http.HttpClient _httpClient = new System.Net.Http.HttpClient(); //share httpClient to reduce overhead
         public string MyScope { get; private set; }
 
         public SimpleService(string name, string url, string scope, int maxload, ITokenCache tokenManager): 
@@ -24,36 +26,17 @@ namespace WebEntryPoint.ServiceCall
         {
             TryAccess(dataBag);
 
-            var token = _tokenManager.GetToken(MyScope);
-
-            _logger.Info("Making get request to '{0}'", Url);
-            var eHttp = new EasyHttp.Http.HttpClient();
-            var auth_header = string.Format("Bearer {0}", token);
-
-            eHttp.Request.AddExtraHeader("Authorization", auth_header);
-            eHttp.Request.Accept= HttpContentTypes.ApplicationJson;
             var ReponseMsg = string.Empty;
             try
             {
-                eHttp.Get(Url + dataBag.MessageId);
-
-                var statusmsg = string.Format("Log msg: {0} returned {1}", Url, eHttp.Response.StatusCode);
-                _logger.Info(statusmsg);
-
-                dataBag.Status = eHttp.Response.StatusCode;
-                await Task.Delay(1); // quick hack to make function async
-
-                if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
-                {
-                    ReponseMsg = ParseResult(eHttp.Response.RawText);
-                }
-                else ReponseMsg = statusmsg;
-
-                dataBag.AddToLog(ReponseMsg);
+                var token = _tokenManager.GetToken(MyScope);
+                //await Task.Delay(1); // quick hack to make function compile async
+                //dataBag = GetResultSync(dataBag, Url + dataBag.MessageId, token);
+                await GetResultASync(dataBag, Url + dataBag.MessageId, token);
             }
             catch (System.Net.WebException ex)
             {
-                ReponseMsg = ex.Message;
+                dataBag.AddToLog( ex.Message);
             }
             finally
             {
@@ -62,45 +45,61 @@ namespace WebEntryPoint.ServiceCall
             return dataBag;
         }
 
-        private async Task<DataBag> CallUsingHttpClient(DataBag data)
+        private DataBag GetResultSync(DataBag dataBag, string methodUrl, string token)
         {
-            // HttpClient shows status 404 on the crash URL
-            var exceptionMessage = string.Empty;
-            var exception = false;
-            using (var client = new System.Net.Http.HttpClient())
+            var result = string.Empty;
+            _logger.Info("Making get request to '{0}'", Url);
+            var eHttp = new EasyHttp.Http.HttpClient();
+            var auth_header = string.Format("Bearer {0}", token);
+
+            eHttp.Request.AddExtraHeader("Authorization", auth_header);
+            eHttp.Request.Accept = HttpContentTypes.ApplicationJson;
+            eHttp.Get(methodUrl);
+
+            var statusmsg = string.Format("Log msg: {0} returned {1}", Url, eHttp.Response.StatusCode);
+            _logger.Info(statusmsg);
+
+            if (eHttp.Response.ContentType.Contains(HttpContentTypes.ApplicationJson))
             {
-                HttpResponseMessage response = null;
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _tokenManager.GetToken(MyScope));
-                client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(HttpContentTypes.ApplicationJson));
-                try
-                {
-                    response = await client.GetAsync(Url);
-                }
-                catch (System.Net.WebException ex)
-                {
-                    exception = true;
-                    exceptionMessage = ex.Message;
-                }
-
-                var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : response.StatusCode;
-                var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
-                _logger.Info(statusmsg);
-
-                await Task.Delay(1); //change to calling service async
-                var reponseMsg = string.Empty;
-                var ReponseMsg = string.Empty;
-                if (exception) ReponseMsg = exceptionMessage;
-                else if (response.Headers.Contains("Accept"))
-                {
-                    ReponseMsg = ParseResult(await response.Content.ReadAsAsync<string>());
-                }
-                else ReponseMsg = statusmsg;
-                data.AddToLog(ReponseMsg);
-                data.Status = resultStatus;
+                result = ParseJsonResult(eHttp.Response.RawText);
             }
-            return data;
+            else result = statusmsg;
+
+            dataBag.Status = eHttp.Response.StatusCode;
+            dataBag.AddToLog(result);
+
+            return dataBag;
         }
-    
+
+        private async Task<DataBag> GetResultASync(DataBag dataBag, string methodUrl, string token)
+        {
+            HttpResponseMessage httpResponseMsg = null;
+            _httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            _httpClient.DefaultRequestHeaders.Accept.Add(
+                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(HttpContentTypes.ApplicationJson));
+            var ReponseMsg = string.Empty;
+
+            var resultStatus = System.Net.HttpStatusCode.Ambiguous;
+            try
+            {
+                httpResponseMsg = await _httpClient.GetAsync(methodUrl);
+
+                resultStatus = httpResponseMsg.StatusCode;
+                var logMsg = string.Format("Log msg: {0} returned {1}", methodUrl, resultStatus);
+                _logger.Info(logMsg);
+
+                 ReponseMsg = ParseJsonResult(await httpResponseMsg.Content.ReadAsStringAsync());
+            }
+            catch (Exception ex)
+            {
+                ReponseMsg = ex.Message;
+            }
+
+            dataBag.AddToLog(ReponseMsg);
+            dataBag.Status = resultStatus;
+            return dataBag;
+        }
 
         private ByteArrayContent SerializeDataBag(DataBag msgObj)
         {
@@ -109,7 +108,7 @@ namespace WebEntryPoint.ServiceCall
             return new ByteArrayContent(buffer);
         }
 
-        private string ParseResult(string json)
+        private string ParseJsonResult(string json)
         {
             var anoType = new { Message = "" };
             string result = null;
@@ -124,6 +123,7 @@ namespace WebEntryPoint.ServiceCall
             }
             return result;
         }
+
         public override string Description()
         {
             return String.Format("Url={0}, \n\t\tmax load = {1}, max retries ={2}", Url, MaxLoad, MaxRetries);

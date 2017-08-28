@@ -17,6 +17,8 @@ namespace WebEntryPoint.ServiceCall
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(PcLookupService), Helpers.ConfigSettings.LogLevel());
         public string ApiKey { get; private set; }
         private List<PostalCodeLookup> postalsDone;
+        private static System.Net.Http.HttpClient _httpClient = new System.Net.Http.HttpClient(); //share httpClient to reduce overhead
+
         DateTime LastPostalsDoneGroom;
         public PcLookupService(string name, string serviceUrl, string apiKey): base("Postal Code Lookup", serviceUrl, 3)
         {
@@ -40,46 +42,62 @@ namespace WebEntryPoint.ServiceCall
 
             if (postalLookup != null)
             {
-                if (!PostalAlreadyLookedBefore(postalLookup))
+                if (!PostalLookedUpBefore(postalLookup))
                 {
-                    var eHttp = new EasyHttp.Http.HttpClient();
-                    eHttp.Request.AddExtraHeader("X-Api-Key", ApiKey);
-                    eHttp.Request.Accept = HttpContentTypes.ApplicationJson;
-
-                    var exceptionMessage = string.Empty;
-                    var exception = false;
-                    try
-                    {
-                        var finalUrl = string.Format("{0}/?postcode={1}&number={2}", Url, postalLookup.postal, postalLookup.housenr);
-                        eHttp.Get(finalUrl);
-                        ReponseMsg = ParseJsonResult(eHttp.Response.RawText);
-                    }
-                    catch (System.Net.WebException ex)
-                    {
-                        exception = true;
-                        ReponseMsg = ex.Message;
-                    }
-
-                    resultStatus = exception ? HttpStatusCode.ServiceUnavailable : eHttp.Response.StatusCode;
-                    var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
-                    _logger.Info(statusmsg);
-
-                    await Task.Delay(1); // to make it async lol
+                   var exceptionMessage = string.Empty;
+                    var finalUrl = string.Format("{0}/?postcode={1}&number={2}", Url, postalLookup.postal, postalLookup.housenr);
+                    data = await GetResultASync(data, finalUrl, "token_not_used");
                 }
                 else //postal already looked up
                 {
                     ReponseMsg = "This postal is already looked up today by this asp session id";
                     resultStatus = HttpStatusCode.OK;
+                    data.AddToLog(ReponseMsg);
+                    data.Status = resultStatus;
                 }
             }
             else
             {
                 ReponseMsg = string.Format("{0} is not a postal code + housenr", data.MessageId);
                 resultStatus = HttpStatusCode.OK;
+                data.AddToLog(ReponseMsg);
+                data.Status = resultStatus;
             }
-            data.AddToLog(ReponseMsg);
-            data.Status = resultStatus; 
             return data;
+        }
+
+        private async Task<DataBag> GetResultASync(DataBag dataBag, string methodUrl, string token)
+        {
+            HttpResponseMessage httpResponseMsg = null;
+            _httpClient.DefaultRequestHeaders.Accept.Add(
+                new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(HttpContentTypes.ApplicationJson));
+            _httpClient.DefaultRequestHeaders.Add("X-Api-Key", ApiKey);
+            var ReponseMsg = string.Empty;
+
+            var resultStatus = System.Net.HttpStatusCode.Ambiguous;
+            try
+            {
+                httpResponseMsg = await _httpClient.GetAsync(methodUrl);
+
+                resultStatus = httpResponseMsg.StatusCode;
+                var logMsg = string.Format("Log msg: {0} returned {1}", methodUrl, resultStatus);
+                _logger.Info(logMsg);
+
+                if (resultStatus == HttpStatusCode.OK)
+                {
+                    var json = await httpResponseMsg.Content.ReadAsStringAsync();
+                    ReponseMsg = ParseJsonResult(json);
+                }
+                else ReponseMsg = logMsg;
+            }
+            catch (Exception ex)
+            {
+                ReponseMsg = ex.Message;
+            }
+
+            dataBag.AddToLog(ReponseMsg);
+            dataBag.Status = resultStatus;
+            return dataBag;
         }
 
         private string ParseJsonResult(string json)
@@ -103,12 +121,12 @@ namespace WebEntryPoint.ServiceCall
             }
             else
             {
-                result = "address not found.";
+                result = string.Format("-No addres found for this postal.");
             }
             return result;
         }
 
-        private bool PostalAlreadyLookedBefore(PostalCodeLookup lookup)
+        private bool PostalLookedUpBefore(PostalCodeLookup lookup)
         {
             GroomPostalsDone();
             var result = postalsDone.Where(p => p.date == DateTime.Now.Date
@@ -145,45 +163,6 @@ namespace WebEntryPoint.ServiceCall
             }
             return result;
             
-        }
-
-        private async Task<DataBag> CallUsingHttpClient(DataBag data)
-        {
-            // HttpClient shows status 404 on the crash URL
-            var exceptionMessage = string.Empty;
-            var exception = false;
-            using (var client = new System.Net.Http.HttpClient())
-            {
-                HttpResponseMessage response = null;
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", ApiKey);
-                client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(HttpContentTypes.ApplicationJson));
-                try
-                {
-                    response = await client.GetAsync(Url);
-                }
-                catch (System.Net.WebException ex)
-                {
-                    exception = true;
-                    exceptionMessage = ex.Message;
-                }
-
-                var resultStatus = exception ? System.Net.HttpStatusCode.ServiceUnavailable : response.StatusCode;
-                var statusmsg = string.Format("Log msg: {0} returned {1} {2}", Url, resultStatus, exceptionMessage);
-                _logger.Info(statusmsg);
-
-                await Task.Delay(1); //change to calling service async
-                var reponseMsg = string.Empty;
-                var ReponseMsg = string.Empty;
-                if (exception) ReponseMsg = exceptionMessage;
-                else if (response.Headers.Contains("Accept"))
-                {
-                    //ReponseMsg = ParseJsonResult(await response.Content.ReadAsAsync<string>());
-                }
-                else ReponseMsg = statusmsg;
-                data.AddToLog(ReponseMsg);
-                data.Status = resultStatus;
-            }
-            return data;
         }
 
         private ByteArrayContent SerializeDataBag(DataBag msgObj)
