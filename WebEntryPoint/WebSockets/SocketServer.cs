@@ -17,10 +17,12 @@ namespace WebEntryPoint.WebSockets
         private WebSocketServer _socketServer;
         private List<IWebSocketConnection> _listenersWithOpenConnections;
         private string[] _listeningHostnamesList;
-
+        private List<string> TokensCheckedIn;
         public SocketServer()
         {
             _listenersWithOpenConnections = new List<IWebSocketConnection>();
+            TokensCheckedIn = new List<string>();
+            TokensCheckedIn.Add("TestToken123");
         }
 
         public void Start(string url)
@@ -43,11 +45,18 @@ namespace WebEntryPoint.WebSockets
             {
                 socket.OnOpen = () =>
                 {
-                    _logger.Trace("Socket Opened by Client: {0}", socket.ConnectionInfo.Origin);
-                    if (IsListeningSocket(socket))
+                    if (Checkedin(socket.ConnectionInfo))
                     {
-                        _listenersWithOpenConnections.Add(socket); 
-                        _logger.Debug("Client '{0}' added to sendlist", socket.ConnectionInfo.Origin);
+                        _logger.Trace("Socket Opened by Client: {0}", socket.ConnectionInfo.Origin);
+                        if (IsListeningSocket(socket))
+                        {
+                            _listenersWithOpenConnections.Add(socket);
+                            _logger.Debug("Client '{0}' added to sendlist", socket.ConnectionInfo.Origin);
+                        }
+                    }
+                    else
+                    {
+                        socket.Close();
                     }
                 };
 
@@ -75,6 +84,13 @@ namespace WebEntryPoint.WebSockets
                     }
                 };
             });
+        }
+
+        private bool Checkedin(IWebSocketConnectionInfo ConnectionInfo)
+        {
+            // using Sec-WebSocket-Protocol seems the only option to set header from javascript
+            return (ConnectionInfo.Headers.ContainsKey("Sec-WebSocket-Protocol") &&
+                ConnectionInfo.Headers["Sec-WebSocket-Protocol"] == "TestToken123");
         }
 
         private bool InternalRequest(string hostName)

@@ -45,7 +45,9 @@ namespace WebEntryPoint.WebSockets
                                                        true,
                                                        tokSrc.Token
                                                        );
-                    tsk.Wait(); tsk.Dispose();
+                    if (!tsk.IsFaulted) tsk.Wait();
+
+                    tsk.Dispose();
                     tokSrc.Dispose();
                 }
             }
@@ -63,12 +65,13 @@ namespace WebEntryPoint.WebSockets
                 {
                     _logger.Info("Connecting to {0}", url);
                     _wsClient = new ClientWebSocket();
+                    _wsClient.Options.SetRequestHeader("Sec-WebSocket-Protocol", "TestToken123");
 
-                    if (Helpers.ConfigSettings.Ssl())
-                    {
-                        _logger.Info("Loading certificate from store");
-                        _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.ConfigSettings.Hostname()));
-                    }
+                    //if (Helpers.ConfigSettings.Ssl())
+                    //{
+                    //    _logger.Info("Loading certificate from store");
+                    //    _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.ConfigSettings.Hostname()));
+                    //}
                     var tokSrc = new CancellationTokenSource();
                     // cannot use await within lock, failr enough
                     var task = _wsClient.ConnectAsync(new Uri(url), tokSrc.Token);
