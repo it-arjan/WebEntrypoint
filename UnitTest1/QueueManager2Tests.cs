@@ -100,8 +100,9 @@ namespace WebEntryPoint.MQ.Tests
                         It.IsAny<ITokenCache>()))
                     .Returns(postbackMoq.Object);
 
+            var socketServerMoq = mockRep.Create<ISocketServer>();
             var socketClientMoq = mockRep.Create<ISocketClient>();
-            socketClientMoq.Setup(sc => sc.Send("socketToken", "message"));
+            socketClientMoq.Setup(sc => sc.Send("accessToken", "feedId", "message"));
 
             UnitTestQlist = SetupMessagequeues();
 
@@ -110,7 +111,8 @@ namespace WebEntryPoint.MQ.Tests
                 UnitTestQlist[1], UnitTestQlist[2], UnitTestQlist[3],
                 UnitTestQlist[4],
                 UnitTestQlist[5], UnitTestQlist[6],
-                wsFactMock.Object, tokenMoq.Object, socketClientMoq.Object);
+                UnitTestQlist[7],
+                wsFactMock.Object, tokenMoq.Object, socketServerMoq.Object, socketClientMoq.Object);
         }
 
         private static void DropMessages(string queue, int nr)
@@ -131,6 +133,7 @@ namespace WebEntryPoint.MQ.Tests
                 entryQueue.Send(msg, dataBag.Label);
             }
         }
+
         private static void DropMessages(MSMQWrapper queue, int nr)
         {
             var dataBag = new DataBag();
@@ -149,15 +152,18 @@ namespace WebEntryPoint.MQ.Tests
                 queue.Send(msg, dataBag.Label);
             }
         }
+
         private static List<string> SetupMessagequeues()
         {
             var qlist = new List<string>
             {
                 @".\Private$\autoTestEntry",
-                @".\Private$\autoTestService1",@".\Private$\autoTestService2",@".\Private$\autoTestService3",
+                @".\Private$\autoTestService1", @".\Private$\autoTestService2", @".\Private$\autoTestService3",
                 @".\Private$\autoTestExit",
-                @".\Private$\autoTestCmd",@".\Private$\autoTestCmdReply"
+                @".\Private$\autoTestCmd", @".\Private$\autoTestCmdReply",
+                @".\Private$\checkinTokenQueue"
             };
+
             foreach (var q in qlist)
             {
                 if (!MessageQueue.Exists(q))

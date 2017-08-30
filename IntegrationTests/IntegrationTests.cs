@@ -33,7 +33,7 @@ namespace IntegrationTests
             var data = new WebEntryPoint.EntryQueuePostData();
             data.MessageId = messageId;
             data.PostBackUrl = string.Format("{0}/postback/", Helpers.TestSettings.DataApiUrl());
-            data.SocketToken = "";
+            data.SocketQmFeed = "";
             data.DoneToken = "";
             data.UserName = "AutoTest";
             data.NrDrops = 0; // should default to 1

@@ -6,9 +6,11 @@ namespace WebEntryPoint
     {
         public string MessageId { get; set; }
         public string PostBackUrl { get; set; }
-        public string SocketToken { get; set; }
-        public string NotificationToken { get; set; }
-        public string ApiFeedToken { get; set; }
+        
+        public string SocketAccessToken { get; set; }
+        public string SocketQmFeed { get; set; }
+        public string SocketNotificationFeed { get; set; }
+        public string SocketApiFeed { get; set; }
 
         public string DoneToken { get; set; }
         public string UserName { get; set; }

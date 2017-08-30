@@ -14,21 +14,49 @@ namespace WebEntryPoint.WebSockets
     {
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(SocketServer), Helpers.ConfigSettings.LogLevel());
         private static readonly NLogWrapper.ILogger _fleckLogger = LogManager.CreateLogger(typeof(FleckLog), Helpers.ConfigSettings.LogLevel());
+
         private WebSocketServer _socketServer;
         private List<IWebSocketConnection> _listenersWithOpenConnections;
         private string[] _listeningHostnamesList;
-        private List<string> TokensCheckedIn;
-        public SocketServer()
+        private Dictionary<string, DateTime> _tokensCheckedIn;
+
+        string _url = string.Empty;
+
+        public SocketServer(string url)
         {
+            _url = url;
             _listenersWithOpenConnections = new List<IWebSocketConnection>();
-            TokensCheckedIn = new List<string>();
-            TokensCheckedIn.Add("TestToken123");
+            _tokensCheckedIn = new Dictionary<string,DateTime>();
         }
 
-        public void Start(string url)
+        public void CheckinToken(string accessToken)
         {
-            _logger.Info("Starting on ip:port {0}", url);
-            _socketServer = new WebSocketServer(url);
+            GroomCheckedTokens();
+            if (!_tokensCheckedIn.ContainsKey(accessToken))
+            {
+                _logger.Debug("Registering new Token! {0}", accessToken);
+                _tokensCheckedIn[accessToken] = DateTime.UtcNow.Date;
+            }
+        }
+
+        private void GroomCheckedTokens()
+        {
+            // only serves to keep the list in decent size
+
+            List<string> key2Remove = new List<string>();
+            foreach (var pair in _tokensCheckedIn)
+            {
+                if (pair.Value != DateTime.UtcNow.Date)
+                    key2Remove.Add(pair.Key);
+            }
+
+            key2Remove.ForEach(x => _tokensCheckedIn.Remove(x));
+        }
+
+        public void Start()
+        {
+            _logger.Info("Starting on ip:port {0}", _url);
+            _socketServer = new WebSocketServer(_url);
             _listeningHostnamesList = Helpers.ConfigSettings.AllowedSocketListenerCsv().Split(',');
             _logger.Info("Listening hostnames found in '{0}'", Helpers.ConfigSettings.AllowedSocketListenerCsvKey);
             foreach (var hostname in _listeningHostnamesList)
@@ -36,7 +64,7 @@ namespace WebEntryPoint.WebSockets
                 _logger.Info("-{0}", hostname);
             }
             
-            if (url.Contains("wss"))
+            if (_url.Contains("wss"))
             {
                 _logger.Info("Server loading certificate from the store");
                 _socketServer.Certificate = Helpers.Security.GetCertificateFromStore(Helpers.ConfigSettings.Hostname());
@@ -56,6 +84,7 @@ namespace WebEntryPoint.WebSockets
                     }
                     else
                     {
+                        // connections without a checkedin token are not allowed
                         socket.Close();
                     }
                 };
@@ -63,10 +92,7 @@ namespace WebEntryPoint.WebSockets
                 socket.OnClose = () =>
                 {
                     _logger.Trace("Socket CLOSED by Client originating from: '{0}'", socket.ConnectionInfo.Origin);
-                    if (IsListeningSocket(socket))
-                    {
-                        _listenersWithOpenConnections.Remove(socket);
-                    }
+                    _listenersWithOpenConnections.Remove(socket);
                 };
 
                 socket.OnMessage = message =>
@@ -88,14 +114,29 @@ namespace WebEntryPoint.WebSockets
 
         private bool Checkedin(IWebSocketConnectionInfo ConnectionInfo)
         {
-            // using Sec-WebSocket-Protocol seems the only option to set header from javascript
-            return (ConnectionInfo.Headers.ContainsKey("Sec-WebSocket-Protocol") &&
-                ConnectionInfo.Headers["Sec-WebSocket-Protocol"] == "TestToken123");
+            // strange header, but using Sec-WebSocket-Protocol seems the only option to set header from javascript
+            bool result = false;
+            if (ConnectionInfo.Headers.ContainsKey("Sec-WebSocket-Protocol"))
+            {
+                var token = ConnectionInfo.Headers["Sec-WebSocket-Protocol"];
+                result = _tokensCheckedIn.ContainsKey(token) && _tokensCheckedIn[token] == DateTime.UtcNow.Date;
+            }
+            return result;
         }
 
         private bool InternalRequest(string hostName)
         {
             return hostName != null && hostName.Contains(Helpers.ConfigSettings.Hostname());
+        }
+
+        private bool IsListeningSocket(IWebSocketConnection socket)
+        {
+            foreach (var hostname in _listeningHostnamesList)
+            {
+                if (socket.ConnectionInfo.Origin != null && socket.ConnectionInfo.Origin.ToLower().Contains(hostname.ToLower().Trim()))
+                    return true;
+            }
+            return false;
         }
 
         public void WireFleckLogging()
@@ -129,14 +170,5 @@ namespace WebEntryPoint.WebSockets
                 }
             };
         }
-        private bool IsListeningSocket(IWebSocketConnection socket)
-        {
-            foreach (var hostname in _listeningHostnamesList)
-            {
-                if (socket.ConnectionInfo.Origin != null && socket.ConnectionInfo.Origin.ToLower().Contains(hostname.ToLower().Trim()))
-                    return true;
-            }
-            return false;
-        }
-    }
+   }
 }

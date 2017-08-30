@@ -34,7 +34,8 @@ namespace WebEntryPoint.ServiceCall
             Service3Nr = clone.Service3Nr;
             CmdResult = clone.CmdResult;
             Message = clone.Message;
-            SocketToken = clone.SocketToken;
+            SocketAccessToken = clone.SocketAccessToken;
+            SocketQmFeed = clone.SocketQmFeed;
         }
 
         public CmdType CmdType { get; set; }
@@ -47,7 +48,8 @@ namespace WebEntryPoint.ServiceCall
         public string CmdResult { get; set; }
         public string Message { get; set; }
 
-        public string SocketToken { get; set; }
+        public string SocketAccessToken { get; set; }
+        public string SocketQmFeed { get; set; }
         
     }
 

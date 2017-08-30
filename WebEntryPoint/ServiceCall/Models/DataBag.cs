@@ -33,9 +33,10 @@ namespace WebEntryPoint.ServiceCall
             Label = transfer.MessageId + " - " + DateTime.Now.ToShortTimeString();
             MessageId = transfer.MessageId;
             PostBackUrl = transfer.PostBackUrl;
-            socketToken = transfer.SocketToken;
-            ApiFeedToken = transfer.ApiFeedToken;
-            notificationToken = transfer.NotificationToken;
+            SocketAccessToken = transfer.SocketAccessToken;
+            SocketQmFeed = transfer.SocketQmFeed;
+            SocketApiFeed = transfer.SocketApiFeed;
+            SocketNotificationFeed = transfer.SocketNotificationFeed;
             doneToken = transfer.DoneToken;
             AspSessionId = transfer.AspSessionId;
             UserName = transfer.UserName;
@@ -53,9 +54,10 @@ namespace WebEntryPoint.ServiceCall
         public string MessageId { get; set; }
         public int TryCount { get; set; }
 
-        public string notificationToken { get; set; }
-        public string socketToken { get; set; }
-        public string ApiFeedToken { get; set; }
+        public string SocketNotificationFeed { get; set; }
+        public string SocketAccessToken { get; set; }
+        public string SocketQmFeed { get; set; }
+        public string SocketApiFeed { get; set; }
         public string doneToken { get; set; }
         public string AspSessionId{ get; set; }
         

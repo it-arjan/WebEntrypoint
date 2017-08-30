@@ -181,6 +181,7 @@
     <Reference Include="System.Xml.Serialization" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\CheckinTokenController.cs" />
     <Compile Include="Controllers\Models\CmdPostData.cs" />
     <Compile Include="Controllers\Models\EntryQueuePostData.cs" />
     <Compile Include="Controllers\CmdQueueController.cs" />

@@ -36,10 +36,13 @@ namespace WebEntryPoint.MQ
         private MSMQWrapper _service3Q;
         private MSMQWrapper _cmdQ;
         private MSMQWrapper _cmdReplyQ;
+        private MSMQWrapper _socketServerCheckinTokenQ;
 
         private Dictionary<QServiceConfig, IWebService> _serviceMap;
         private Dictionary<ProcessPhase, QServiceConfig> _activeServiceMapper;
         static ILogger _logger = LogManager.CreateLogger(typeof(QueueManager2), Helpers.ConfigSettings.LogLevel());
+
+        private ISocketServer _socketServer;
         private ISocketClient _webTracer;
 
         private IWebserviceFactory _wsFactory;
@@ -67,10 +70,13 @@ namespace WebEntryPoint.MQ
         public int AddCount { get; private set; }
         object _processed = new object();
 
-        public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q,
-                                IWebserviceFactory wsFactoryInject,
-                                ITokenCache tokenManagerInject,
-                                ISocketClient socketClientInject
+        public QueueManager2(string entry_Q, string service1_Q, string service2_Q, string service3_Q, 
+                    string exit_Q, string cmd_Q, string cmdReply_Q,
+                    string socketServerCheckinToken_Q,
+                    IWebserviceFactory wsFactoryInject,
+                    ITokenCache tokenManagerInject,
+                    ISocketServer socketServerInject,
+                    ISocketClient socketClientInject
             )
         {
             _wsFactory = wsFactoryInject;
@@ -78,20 +84,25 @@ namespace WebEntryPoint.MQ
             ProcessedList = new List<string>();
             _serviceMap = new Dictionary<QServiceConfig, IWebService>();
             _activeServiceMapper = new Dictionary<ProcessPhase, QServiceConfig>();
+            _socketServer = socketServerInject;
             _webTracer = socketClientInject;
 
-            Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q);
+            //_socketServer.WireFleckLogging(); //enable for debugging
+            _socketServer.Start();
+
+            Init(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q, socketServerCheckinToken_Q);
         }
 
         public delegate void EventHandlerWithQueue(object sender, ReceiveCompletedEventArgs e, MSMQWrapper queue);
 
-        private string Init(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q)
+        private string Init(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, 
+            string cmdReply_Q, string socketServerCheckinToken_Q)
         {
             if (_initialized)
             {
                 return "Already initialized, call stop";
             }
-            CheckQueuePaths(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q);
+            CheckQueuePaths(entry_Q, service1_Q, service2_Q, service3_Q, exit_Q, cmd_Q, cmdReply_Q, socketServerCheckinToken_Q);
 
             try
             {
@@ -101,15 +112,19 @@ namespace WebEntryPoint.MQ
                 _cmdQ = new MSMQWrapper(cmd_Q);
                 _cmdReplyQ = new MSMQWrapper(cmdReply_Q);
 
-                // clean up the cmd queues
-                _cmdQ.Q.Purge();
-                _cmdReplyQ.Q.Purge();
 
                 _entryQ = new MSMQWrapper(entry_Q);
                 _service1Q = new MSMQWrapper(service1_Q);
                 _service2Q = new MSMQWrapper(service2_Q);
                 _service3Q = new MSMQWrapper(service3_Q);
                 _exitQ = new MSMQWrapper(exit_Q);
+                _socketServerCheckinTokenQ = new MSMQWrapper(socketServerCheckinToken_Q);
+
+                // clean up some queues
+                _cmdQ.Q.Purge();
+                _cmdReplyQ.Q.Purge();
+                _socketServerCheckinTokenQ.Q.Purge();
+
                 ConfigureQFormatters_Handlers();
 
                 var serviceNr = QServiceConfig.Service1;
@@ -140,7 +155,7 @@ namespace WebEntryPoint.MQ
             _cmdQ.AddHandler(QueueCmdHandler);
 
             _cmdReplyQ.SetFormatters(typeof(CmdBag), typeof(string));
-            // nothing is read from _cmdReplyQ
+            // no Handler, _cmdReplyQ is only sent to in QueueManager
 
             _entryQ.SetFormatters(typeof(DataBag), typeof(string));
             _entryQ.AddHandler(EntryHandler);
@@ -156,6 +171,9 @@ namespace WebEntryPoint.MQ
 
             _exitQ.SetFormatters(typeof(DataBag), typeof(string));
             _exitQ.AddHandler(ExitHandler);
+
+            _socketServerCheckinTokenQ.SetFormatters(typeof(string));
+            _socketServerCheckinTokenQ.AddHandler(CheckinTokenHandler);
         }
 
         private CmdBag GetActiveServices()
@@ -178,18 +196,20 @@ namespace WebEntryPoint.MQ
             }
             return GetActiveServices();
         }
-        private void CheckQueuePaths(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, string cmd_Q, string cmdReply_Q)
+        private void CheckQueuePaths(string entry_Q, string service1_Q, string service2_Q, string service3_Q, string exit_Q, 
+            string cmd_Q, string cmdReply_Q, string socketServerCheckinToken_Q)
         {
             // The choice is not to auto-create queues
 
             string nonexist = string.Empty;
-            if (!MessageQueue.Exists(entry_Q)) nonexist += entry_Q;
-            if (!MessageQueue.Exists(service1_Q)) nonexist += ("'" + service1_Q);
-            if (!MessageQueue.Exists(service2_Q)) nonexist += ("'" + service2_Q);
-            if (!MessageQueue.Exists(service3_Q)) nonexist += ("'" + service3_Q);
-            if (!MessageQueue.Exists(exit_Q)) nonexist += ("'" + exit_Q);
-            if (!MessageQueue.Exists(cmd_Q)) nonexist += ("'" + cmd_Q);
-            if (!MessageQueue.Exists(cmdReply_Q)) nonexist += ("'" + cmdReply_Q);
+            if (!MessageQueue.Exists(entry_Q)) nonexist += (" " + entry_Q);
+            if (!MessageQueue.Exists(service1_Q)) nonexist += (" " + service1_Q);
+            if (!MessageQueue.Exists(service2_Q)) nonexist += (" " + service2_Q);
+            if (!MessageQueue.Exists(service3_Q)) nonexist += (" " + service3_Q);
+            if (!MessageQueue.Exists(exit_Q)) nonexist += (" " + exit_Q);
+            if (!MessageQueue.Exists(cmd_Q)) nonexist += (" " + cmd_Q);
+            if (!MessageQueue.Exists(cmdReply_Q)) nonexist += (" " + cmdReply_Q);
+            if (!MessageQueue.Exists(socketServerCheckinToken_Q)) nonexist += (" " + socketServerCheckinToken_Q);
 
             if (nonexist != string.Empty)
             {
@@ -210,6 +230,7 @@ namespace WebEntryPoint.MQ
             _service2Q.BeginReceive();
             _service3Q.BeginReceive(); 
             _exitQ.BeginReceive();
+            _socketServerCheckinTokenQ.BeginReceive();
 
             _logger.Info("Queue manager listening on queues {0}, {1}, {2}, {3}, {4}. \nCommand queue = {5}", 
                 _entryQ.Q.FormatName, _service1Q.Q.FormatName, _service2Q.Q.FormatName, _service3Q.Q.FormatName, _exitQ.Q.FormatName, _cmdQ.Q.FormatName);
@@ -250,7 +271,7 @@ namespace WebEntryPoint.MQ
                     bag.Message = logMsg;
                     _logger.Debug(logMsg);
 
-                    _webTracer.Send(bag.SocketToken, logMsg);
+                    _webTracer.Send(bag.SocketAccessToken, bag.SocketQmFeed, logMsg);
                     _logger.Debug(logMsg);
                     break;
                 case CmdType.GetServiceConfig:
@@ -261,7 +282,7 @@ namespace WebEntryPoint.MQ
                     bag.CmdResult = string.Format("{0},{1},{2}", (int)bag.Service1Nr, (int)bag.Service2Nr, (int)bag.Service3Nr);
 
                     logMsg = string.Format("Current service config is {0}, {1}, {2}", bag.Service1Nr, bag.Service2Nr, bag.Service3Nr);
-                    _webTracer.Send(bag.SocketToken, logMsg);
+                    _webTracer.Send(bag.SocketAccessToken, bag.SocketQmFeed, logMsg);
                     bag.Message = logMsg;
                     break;
 
@@ -273,7 +294,7 @@ namespace WebEntryPoint.MQ
 
                     bag.CmdResult = string.Format("{0},{1},{2}", (int)bag.Service1Nr, (int)bag.Service2Nr, (int)bag.Service3Nr);
                     logMsg = string.Format("Service config set to {0}, {1}, {2}", bag.Service1Nr, bag.Service2Nr, bag.Service3Nr);
-                    _webTracer.Send(bag.SocketToken, logMsg);
+                    _webTracer.Send(bag.SocketAccessToken, bag.SocketQmFeed, logMsg);
                     bag.Message = logMsg;
                     break;
             }
@@ -300,7 +321,12 @@ namespace WebEntryPoint.MQ
             //AddCount++;
 
             _service1Q.Send(msg);
-            _webTracer.Send(msgObj.socketToken, "Entry: Dropped {0} in the Queue for service.1", msgObj.MessageId);
+
+            _webTracer.Send(
+                msgObj.SocketAccessToken, 
+                msgObj.SocketQmFeed, 
+                string.Format("Entry: Dropped {0} in the Queue for service.1", msgObj.MessageId)
+                );
 
             _entryQ.BeginReceive(); 
         }
@@ -316,7 +342,7 @@ namespace WebEntryPoint.MQ
             {
                 string logMsg = string.Format("Received '{0}' from '{1}'", dataBag.MessageId, bareQ.Path);
                 _logger.Debug(logMsg);
-                _webTracer.Send(dataBag.socketToken, logMsg);
+                _webTracer.Send(dataBag.SocketAccessToken, dataBag.SocketQmFeed, logMsg);
 
                 string LogMsg = string.Empty;
                 bool paralell = DetermineModeForThisCall(dataBag, out LogMsg) == ExeModus.Paralell;
@@ -367,17 +393,32 @@ namespace WebEntryPoint.MQ
         {
 
             System.Messaging.Message msg = _exitQ.Q.EndReceive(e.AsyncResult);
-            DataBag msgObj = msg.Body as DataBag;
+            DataBag bag = msg.Body as DataBag;
 
-            _webTracer.Send(msgObj.socketToken,
-                "Exit handler: received '{0}' as completed, posting it back..", msgObj.MessageId);
+            _webTracer.Send(bag.SocketAccessToken, bag.SocketQmFeed,
+                string.Format("Exit handler: received '{0}' as completed, posting it back..", bag.MessageId));
 
             var postbackService = _wsFactory.Create(QServiceConfig.Service8, _tokenManager);
-            postbackService.Url = msgObj.PostBackUrl;
-            var status = postbackService.CallSync(msgObj); // #TODO call Async
-            _webTracer.Send(msgObj.socketToken, "Postback returned {0}", status);
-            if (status == HttpStatusCode.OK) _webTracer.Send(msgObj.socketToken, msgObj.doneToken);
+            postbackService.Url = bag.PostBackUrl;
+
+            var status = postbackService.CallSync(bag); // #TODO call Async
+            _webTracer.Send(bag.SocketAccessToken, bag.SocketQmFeed, 
+                string.Format("Postback returned {0}", status));
+
+            if (status == HttpStatusCode.OK) _webTracer.Send(bag.SocketAccessToken, bag.SocketQmFeed, bag.doneToken);
             _exitQ.BeginReceive();
+        }
+
+        private void CheckinTokenHandler(object sender, ReceiveCompletedEventArgs e)
+        {
+            System.Messaging.Message msg = _socketServerCheckinTokenQ.Q.EndReceive(e.AsyncResult);
+            var token = msg.Body as string;
+            if (token != null)
+            {
+                _socketServer.CheckinToken(token);
+            }
+
+            _socketServerCheckinTokenQ.BeginReceive();
         }
 
         public int StopAll()
@@ -409,6 +450,9 @@ namespace WebEntryPoint.MQ
             _exitQ.RemoveHandler(ExitHandler);
             _exitQ.Q.Dispose();
 
+            _socketServerCheckinTokenQ.RemoveHandler(CheckinTokenHandler);
+            _socketServerCheckinTokenQ.Q.Dispose();
+
             return 0;
         }
 
@@ -436,7 +480,8 @@ namespace WebEntryPoint.MQ
             var dataBag = msg.Body as DataBag;
             var service = GetService(dataBag.CurrentPhase);
 
-            _webTracer.Send(dataBag.socketToken, "Calling '{0}' with '{1}'", service.Name, dataBag.MessageId);
+            _webTracer.Send(dataBag.SocketAccessToken, dataBag.SocketQmFeed, 
+                string.Format("Calling '{0}' with '{1}'", service.Name, dataBag.MessageId));
 
             dataBag.TryCount++;
             dataBag = await service.CallAsync(dataBag);
@@ -448,7 +493,9 @@ namespace WebEntryPoint.MQ
                 if (dataBag.TryCount < service.MaxRetries)
                 {
                     int delay = 1;
-                    _webTracer.Send(dataBag.socketToken, "{0} failed for {1}, Retry in {2} secs", service.Name, dataBag.MessageId, delay);
+                    _webTracer.Send(dataBag.SocketAccessToken, dataBag.SocketQmFeed, 
+                        string.Format("{0} failed for {1}, Retry in {2} secs", service.Name, dataBag.MessageId, delay));
+
                     dataBag.AddToLog("retry in {0} secs", delay);
                     if (UseTimedRetry) ReQueueWithTimedDelay(msg, delay);
                     else await ReQueueWithTaskDelay(msg, delay);
@@ -468,7 +515,10 @@ namespace WebEntryPoint.MQ
                 dataBag.CurrentPhase++;
                 dataBag.Status = HttpStatusCode.OK;
                 dataBag.TryCount = 0;
-                _webTracer.Send(dataBag.socketToken, "Call to {1} (={3}) succeeded, dropping {0} in the MQ for {2}", dataBag.MessageId, oldPhase, dataBag.CurrentPhase, service.Name);
+                _webTracer.Send(dataBag.SocketAccessToken, dataBag.SocketQmFeed, 
+                    string.Format("Call to {1} (={3}) succeeded, dropping {0} in the MQ for {2}", 
+                        dataBag.MessageId, oldPhase, dataBag.CurrentPhase, service.Name)
+                        );
                 GetQueue(dataBag.CurrentPhase).Send(msg, dataBag.Label);
             }
         }

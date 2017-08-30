@@ -57,7 +57,7 @@ namespace WebEntryPoint
             _logger.Debug("POST, Data received: {0}", JsonConvert.SerializeObject(received));
             if (received.LogDropRequest)
             {
-                RemoteRequestLogger.Log(received.User, received.AspSessionId, received.ApiFeedToken, "todo", "application/json", "POST", "/CmdQueue");
+                RemoteRequestLogger.Log(received.User, received.AspSessionId, received.SocketAccessToken, received.SocketApiFeed, "ip=todo", "application/json", "POST", "/CmdQueue");
             }
             var cmdBag = ProcessPostedData(received); 
             CmdBag resultBag;
@@ -99,7 +99,8 @@ namespace WebEntryPoint
         private CmdBag ProcessPostedData(CmdPostData received)
         {
             var cmdBag = new CmdBag();
-            cmdBag.SocketToken = received.SocketToken;
+            cmdBag.SocketAccessToken = received.SocketAccessToken;
+            cmdBag.SocketQmFeed = received.SocketQmFeed;
 
             var service1Nr = string.IsNullOrEmpty(received.Service1Nr) ? -1 : Convert.ToInt16(received.Service1Nr);
             var service2Nr = string.IsNullOrEmpty(received.Service2Nr) ? -1 : Convert.ToInt16(received.Service2Nr);

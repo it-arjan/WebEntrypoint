@@ -21,24 +21,23 @@ namespace WebEntryPoint.WebSockets
         {
             _url = serverUrl;
             _logger.Info("Connecting to socket server '{0}'", _url);
-            this.Connect(_url);
         }
 
-        public void Send(string sessionToken, string msg, params object[] msgPars)
+        public void Send(string accessToken, string feedId, string msg)
         {
             try
             {
                 if (!this.Connected())
                 {
-                    _logger.Warn("SocketClient seems disconnected, reconnecting....");
-                    this.Connect(_url);
+                    _logger.Debug("Connecting to socket server....");
+                    this.Connect(_url, accessToken);
                 }
 
                 lock (_serializer)
                 {
                     var tokSrc = new CancellationTokenSource();
 
-                    string total_msg = string.Format("{0}#-_-_-#-Queue Manager: {1}", sessionToken, string.Format(msg, msgPars));
+                    string total_msg = string.Format("{0}#-_-_-#-Queue Manager: {1}", feedId, msg);
                     var tsk = _wsClient.SendAsync(
                                    new ArraySegment<byte>(Encoding.UTF8.GetBytes(total_msg)),
                                                        WebSocketMessageType.Text,
@@ -57,7 +56,7 @@ namespace WebEntryPoint.WebSockets
             }
         }
 
-        private void Connect(string url)
+        private void Connect(string url, string accessToken)
         {
             lock (_serializer)
             { 
@@ -65,17 +64,12 @@ namespace WebEntryPoint.WebSockets
                 {
                     _logger.Info("Connecting to {0}", url);
                     _wsClient = new ClientWebSocket();
-                    _wsClient.Options.SetRequestHeader("Sec-WebSocket-Protocol", "TestToken123");
+                    _wsClient.Options.SetRequestHeader("Sec-WebSocket-Protocol", accessToken);
 
-                    //if (Helpers.ConfigSettings.Ssl())
-                    //{
-                    //    _logger.Info("Loading certificate from store");
-                    //    _wsClient.Options.ClientCertificates.Add(Helpers.Security.GetCertificateFromStore(Helpers.ConfigSettings.Hostname()));
-                    //}
                     var tokSrc = new CancellationTokenSource();
-                    // cannot use await within lock, failr enough
                     var task = _wsClient.ConnectAsync(new Uri(url), tokSrc.Token);
-                    task.Wait(); task.Dispose();
+                    if (!task.IsFaulted) task.Wait();
+                    task.Dispose();
 
                     _logger.Info("Opened ClientWebSocket to {0}", url);
                     tokSrc.Dispose();

@@ -11,7 +11,9 @@ namespace WebEntryPoint.MQ
     /*
      * This is just a wrapper for convenience and serving as documentation, 
      * goal is NOT to completely encapusulate MSMQ
-     * MSMQ often fails (without msg) on incorrect usage, behavior which is also often not documented
+     * MSMQ often fails (without msg) on incorrect usage, 
+     * This behavior is often not documented
+     * This wrapper class serves to handle these cases
      * 
      * */
     public class MSMQWrapper

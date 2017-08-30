@@ -2,6 +2,6 @@
 {
     public interface ISocketClient
     {
-        void Send(string sessionToken, string msg, params object[] msgPars);
+        void Send(string accessToken, string feedId, string msg);
     }
 }

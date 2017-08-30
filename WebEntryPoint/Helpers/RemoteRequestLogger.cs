@@ -14,20 +14,13 @@ namespace WebEntryPoint.Helpers
     public static class RemoteRequestLogger
     {
         private static ILogger _logger = LogManager.CreateLogger(typeof(RemoteRequestLogger), Helpers.ConfigSettings.LogLevel());
-        public static void Log(string userName, string aspSessionId, string apiFeedToken, string fromIp, string contentype, string method, string path)
+
+        public static void Log(string userName, string aspSessionId, string SocketServerAccessToken, string socketFeedId, string fromIp, string contentype, string method, string path)
         {
-            var acccess_token = new ServiceCall.TokenCache().GetToken(Helpers.IdSrv3.ScopeFrontendDataApi);
+            var oathToken = new ServiceCall.TokenCache().GetToken(Helpers.IdSrv3.ScopeFrontendDataApi);
             var logEntry = CreateApiLogEntryWithRequestData(userName, aspSessionId, fromIp, contentype, method, path);
             string url = string.Format("{0}/requestlog", Helpers.ConfigSettings.DataApiUrl());
-            Post(url, apiFeedToken, acccess_token, JsonConvert.SerializeObject(logEntry));
-        }
-
-        private static bool SessionIdOnIgnoreList(string aspSessionId, string apiFeedToken, string acccess_token)
-        {
-            //OLD this is now in the posted data as bool
-            string url = string.Format("{0}/ipsessionid/exists/{1}", Helpers.ConfigSettings.DataApiUrl(), aspSessionId);
-            var result = Get(url, apiFeedToken, acccess_token);
-            return result.ToLower().Contains("true");
+            Post(url, oathToken, SocketServerAccessToken, socketFeedId, JsonConvert.SerializeObject(logEntry));
         }
 
         private static Models.RequestLogEntry CreateApiLogEntryWithRequestData(string userName, string aspSessionId, string fromIp, string contentype, string method, string path)
@@ -43,27 +36,31 @@ namespace WebEntryPoint.Helpers
                 AspSessionId = aspSessionId
             };
         }
-        private static string Get(string url, string apiFeedToken, string accessToken)
+        private static string Get(string url, string oauthToken, string socketServerAccessToken, string feedId)
         {
             var eHttp = new EasyHttp.Http.HttpClient();
-            eHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", accessToken));
-            eHttp.Request.AddExtraHeader("X-socketToken", apiFeedToken);
+            eHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", oauthToken));
+            eHttp.Request.AddExtraHeader("X-socketFeedId", feedId);
+            eHttp.Request.AddExtraHeader("X-socketServerAccessToken", socketServerAccessToken);
             eHttp.Request.Accept = "application/json";
             eHttp.Get(url);
+
             if (eHttp.Response.StatusCode != System.Net.HttpStatusCode.OK)
                 throw new HttpException(eHttp.Response.StatusCode, eHttp.Response.StatusDescription);
 
             return eHttp.Response.RawText;
         }
-        private static void Post(string url, string apiFeedToken, string accessToken, string json)
+
+        private static void Post(string url, string oauthToken, string socketServerAccessToken, string feedId, string json)
         {
             try
             {
                 var eHttp = new EasyHttp.Http.HttpClient();
                 // for now: get new token every request
                 // todo try to cache it in application["tokencache"] 
-                eHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", accessToken));
-                eHttp.Request.AddExtraHeader("X-socketToken", apiFeedToken);
+                eHttp.Request.AddExtraHeader("Authorization", string.Format("bearer {0}", oauthToken));
+                eHttp.Request.AddExtraHeader("X-socketFeedId", feedId);
+                eHttp.Request.AddExtraHeader("X-socketServerAccessToken", socketServerAccessToken);
 
                 eHttp.Post(url, json, HttpContentTypes.ApplicationJson);
                 if (eHttp.Response.StatusCode != System.Net.HttpStatusCode.OK)

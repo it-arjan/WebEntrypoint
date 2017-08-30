@@ -28,16 +28,16 @@ namespace WebEntryPoint.ServiceCall
             TryAccess(data);
             if (data.LogRequests)
             {
-                RemoteRequestLogger.Log(data.UserName, data.AspSessionId, data.ApiFeedToken, "todo", "application/json", "POST", "/Postbackdatas");
+                RemoteRequestLogger.Log(data.UserName, data.AspSessionId, data.SocketAccessToken, data.SocketApiFeed, "todo", "application/json", "POST", "/Postbackdatas");
             }
-            var status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, data.ApiFeedToken, new PostbackData(data));
+            var status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, data.SocketApiFeed, new PostbackData(data));
             ReleaseAccess();
             if (status == HttpStatusCode.Unauthorized)
             {
                 // unlikely, but theoretically possible
                 _logger.Info("Postback Unauthorized, trying again once with a fresh token..");
                 TryAccess(data);
-                status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, data.ApiFeedToken,new PostbackData(data));
+                status = PostBackUsingEasyHttp(_tokenCache.GetToken(AuthScope), data.PostBackUrl, data.SocketApiFeed,new PostbackData(data));
                 ReleaseAccess();
             }
             return status;
@@ -54,7 +54,7 @@ namespace WebEntryPoint.ServiceCall
                 var auth_header = string.Format("Bearer {0}", token);
 
                 eHttp.Request.AddExtraHeader("Authorization", auth_header);
-                eHttp.Request.AddExtraHeader("X-socketToken", apiFeedToken);
+                eHttp.Request.AddExtraHeader("X-socketFeedId", apiFeedToken);
                 result = eHttp.Post(postbackUrl, data, HttpContentTypes.ApplicationJson).StatusCode;
                 _logger.Info("Postback returned '{0}': (1)", result);
             }

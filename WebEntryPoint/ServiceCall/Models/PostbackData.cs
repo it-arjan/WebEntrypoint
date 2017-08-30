@@ -17,7 +17,7 @@ namespace WebEntryPoint.ServiceCall
             Duration = (decimal)(DateTime.Now - databag.Started).TotalSeconds;
             UserName = databag.UserName;
             AspSessionId = databag.AspSessionId;
-            NotificationToken = databag.notificationToken;
+            NotificationToken = databag.SocketNotificationFeed;
         }
         public string MessageId { get; set; }
         public string UserName { get; set; }

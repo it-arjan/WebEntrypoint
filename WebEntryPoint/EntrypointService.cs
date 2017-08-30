@@ -23,11 +23,9 @@ namespace WebEntryPoint
     { 
         private IDisposable _httpServer;
         private QueueManager2 queueManager;
-
         private static readonly NLogWrapper.ILogger _logger = LogManager.CreateLogger(typeof(EntrypointService), ConfigSettings.LogLevel());
 
         private Thread qmThread;
-        private WebSockets.ISocketServer _socketServer;
 
         public EntrypointService()
         {
@@ -74,23 +72,24 @@ namespace WebEntryPoint
             _httpServer = WebApp.Start<HttpHost>(url);
 
             _logger.Info("Starting socket server..");
-            _socketServer = new WebSockets.SocketServer();
-            //_socketServer.WireFleckLogging();
-            _socketServer.Start(ConfigSettings.SocketServerUrl().Replace(ConfigSettings.Hostname(), "0.0.0.0"));
 
-            _logger.Info("Starting queuemanager..");
+             _logger.Info("Starting queuemanager..");
             queueManager = new QueueManager2(
                 ConfigSettings.EntryQueue(),
                 ConfigSettings.Service1Queue(), ConfigSettings.Service2Queue(), ConfigSettings.Service3Queue(),
                 ConfigSettings.ExitQueue(), ConfigSettings.CmdQueue(), ConfigSettings.CmdReplyQueue(),
-                new WebserviceFactory(), new TokenCache(), new SocketClient(Helpers.ConfigSettings.SocketServerUrl())
+                ConfigSettings.CheckinTokenQueue(),
+                new WebserviceFactory(), new TokenCache(),
+                new SocketServer(ConfigSettings.SocketServerUrl().Replace(ConfigSettings.Hostname(), "0.0.0.0")),
+                new SocketClient(Helpers.ConfigSettings.SocketServerUrl())
                  );
-            qmThread = new Thread(queueManager.StartListening);
 
+            qmThread = new Thread(queueManager.StartListening);
             qmThread.Start();  
             _logger.Info("Startup completed.");
 
         }
+
 
         protected override void OnStop()
         {

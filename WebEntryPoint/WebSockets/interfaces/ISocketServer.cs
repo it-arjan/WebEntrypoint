@@ -2,7 +2,8 @@
 {
     public interface ISocketServer
     {
-        void Start(string url);
+        void Start();
         void WireFleckLogging();
+        void CheckinToken(string accessToken);
     }
 }
