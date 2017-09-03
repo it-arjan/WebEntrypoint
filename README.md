@@ -27,4 +27,8 @@ see https://messagequeuefrontend.azurewebsites.net/systemlayout
 
 - Auto-checks if all settings are present in app.config
 
+### IntegrationTests Project
+-some integration tests wihtout any mockeing
 
+### UnitTest1 Project
+-some unit tests using mocks objects. Message queue itself is not mocked but simply used which is probably not according to the rules
