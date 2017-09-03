@@ -3,31 +3,28 @@ To see how webentrypoint fits in the overall system,
 see https://messagequeuefrontend.azurewebsites.net/systemlayout
 
 # Most interesting
-/QueueManager2.cs
--async message processing code
 
--offers paralell & sequential executiong mode
+### /QueueManager2.cs
+- async message processing code
+- offers paralell & sequential executiong mode
+- uses sempahores implementing a max load on webservices
+- auto-switches to sequential mode when max load on a service is reached
 
--uses sempahores implementing a max load on webservices
+### /ServiceCall Folder
 
--auto-switches to sequential mode when max load on a service is reached
+- O-O including WebServiceFactory
+- async web service calls
 
-/ServiceCall Folder
+### /Controllers
 
--O-O including WebServiceFactory
+- Implementing the web api to drop a message in the queue
 
--async web service calls
+### /WebSockets
 
-/Controllers
+- holds the code for the (now secure) SocketServer + SocketClient
 
--Implementing the web api to drop a message in the queue
+### /Helpers/SettingsChecker
 
-/WebSockets
-
--holds the code for the (now secure) SocketServer + SocketClient
-
-/Helpers/SettingsChecker
-
--Auto-checks if all settings are present in app.config
+- Auto-checks if all settings are present in app.config
 
 
