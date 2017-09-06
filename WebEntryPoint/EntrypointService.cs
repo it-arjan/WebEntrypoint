@@ -39,12 +39,12 @@ namespace WebEntryPoint
         private void CheckHealth()
         {
             _logger.Info("Checking config settings..");
-            SettingsChecker.CheckPresenceAllPlainSettings(typeof( ConfigSettings));
+            SettingsChecker.CheckPlainSettings(typeof( ConfigSettings), excludeList: new List<string>());
 
             var serviceNr = QServiceConfig.Service1;
             while (serviceNr != QServiceConfig.Enum_End)
             {
-                SettingsChecker.CheckPresenceAllSettingsForThisEnumval(typeof(ConfigSettings),typeof(QServiceConfig), serviceNr);
+                SettingsChecker.CheckPresenceEnumeratedSettings(typeof(ConfigSettings),typeof(QServiceConfig), serviceNr);
                 serviceNr++;
             }
 
